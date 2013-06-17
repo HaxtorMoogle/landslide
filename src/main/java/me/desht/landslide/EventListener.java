@@ -43,6 +43,10 @@ public class EventListener implements Listener {
 				if (checkForSlide(event.getBlock(), event.getTo(), event.getData(), true)) {
 					// the block continues to slide
 					event.setCancelled(true);
+				} else {
+					if (new Random().nextInt(100) < plugin.getConfig().getInt("explode_effect_chance")) {
+						fb.getWorld().createExplosion(fb.getLocation(), 0.0f);
+					}
 				}
 			}
 		}
