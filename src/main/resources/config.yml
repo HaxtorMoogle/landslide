@@ -1,8 +1,8 @@
-log_level: fine
+log_level: info
 max_slides_per_tick: 20
 max_slides_total: 200
 slidy_worlds: [ world ]
-cliff_stability: 25
+cliff_stability: 50
 slide_chance:
   dirt: 85
   grass: 60
