@@ -17,6 +17,7 @@ package me.desht.landslide;
     along with Landslide.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -45,6 +46,7 @@ import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.mcstats.MetricsLite;
 
 import com.avaje.ebean.LogLevel;
 
@@ -85,6 +87,8 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 				slideManager.tick();
 			}
 		}, 1L, 1L);
+
+		setupMetrics();
 	}
 
 	@Override
@@ -101,6 +105,15 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 	public List<String> onTabComplete(CommandSender sender, Command command, String label, String[] args) {
 		return cmds.onTabComplete(sender, command, label, args);
 	}
+
+	private void setupMetrics() {
+        try {
+                MetricsLite metrics = new MetricsLite(this);
+                metrics.start();
+        } catch (IOException e) {
+                LogUtils.warning("Couldn't submit metrics stats: " + e.getMessage());
+        }
+}
 
 	public ConfigurationManager getConfigManager() {
 		return configManager;
