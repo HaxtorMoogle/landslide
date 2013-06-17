@@ -4,7 +4,7 @@ Landslide is a Bukkit plugin that allows you to play Checkers (Draughts) on your
  
 ## Installation and Usage
 
-Detailed documentation can be found in BukkitDev: http://dev.bukkit.org/server-mods/checkers
+Detailed documentation can be found in BukkitDev: http://dev.bukkit.org/bukkit-mods/landslide
 
 ## Building
 
