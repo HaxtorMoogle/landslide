@@ -23,6 +23,7 @@ public class SlideManager {
 	private static final int MAX_SLIDE_DELAY = 30; // must be < RING_BUFFER_SIZE - DROP_DELAY
 	private static final BlockFace[] faceChecks = { BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST };
 	private static final Vector dropDown = new Vector(0.0, 0.0, 0.0);
+	private static final int MAX_ENTITIES = 1000;
 
 	private final Random random;
 	private final Set<String> affectedWorlds;
