@@ -18,9 +18,9 @@ import org.bukkit.entity.FallingBlock;
 import org.bukkit.util.Vector;
 
 public class SlideManager {
-	private static final int RING_BUFFER_SIZE = 50;
+	private static final int RING_BUFFER_SIZE = 30;
 	private static final int DROP_DELAY = 6;
-	private static final int MAX_SLIDE_DELAY = 30; // must be < RING_BUFFER_SIZE - DROP_DELAY
+	private static final int MAX_SLIDE_DELAY = 20; // must be < RING_BUFFER_SIZE - DROP_DELAY
 	private static final BlockFace[] faceChecks = { BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST };
 	private static final Vector dropDown = new Vector(0.0, 0.0, 0.0);
 
@@ -69,10 +69,7 @@ public class SlideManager {
 		totalSlidesScheduled -= slides[pointer].size();
 		slides[pointer].clear();
 		drops[pointer].clear();
-		pointer++;
-		if (pointer >= RING_BUFFER_SIZE) {
-			pointer = 0;
-		}
+		pointer = (pointer + 1) % RING_BUFFER_SIZE;
 	}
 
 	public boolean scheduleBlockSlide(Block block, BlockFace direction, Material mat, byte data, boolean immediate) {
