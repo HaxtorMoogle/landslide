@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
+import me.desht.dhutils.DHUtilsException;
 import me.desht.dhutils.LogUtils;
 
 import org.bukkit.Location;
@@ -73,15 +74,19 @@ public class SlideManager {
 	}
 
 	public boolean scheduleBlockSlide(Block block, BlockFace direction, Material mat, byte data, boolean immediate) {
-		if (totalSlidesScheduled >= getMaxSlidesTotal()) {
+		if (totalSlidesScheduled >= getMaxSlidesTotal() || getMaxSlidesPerTick() <= 0) {
 			return false;
 		}
 
 		int delay = immediate ? 0 : random.nextInt(MAX_SLIDE_DELAY);
 
 		int idx = (pointer + delay) % RING_BUFFER_SIZE;
+		int n = 0;
 		while (slides[idx].size() >= getMaxSlidesPerTick()) {
 			idx = (idx + 1) % RING_BUFFER_SIZE;
+			if (n++ >= RING_BUFFER_SIZE) {
+				return false;
+			}
 		}
 		slides[idx].add(new Slide(block.getLocation(), direction, mat.getId(), data, immediate));
 		totalSlidesScheduled++;
