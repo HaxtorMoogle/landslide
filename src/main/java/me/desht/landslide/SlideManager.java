@@ -23,7 +23,6 @@ public class SlideManager {
 	private static final int MAX_SLIDE_DELAY = 30; // must be < RING_BUFFER_SIZE - DROP_DELAY
 	private static final BlockFace[] faceChecks = { BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST };
 	private static final Vector dropDown = new Vector(0.0, 0.0, 0.0);
-	private static final int MAX_ENTITIES = 1000;
 
 	private final Random random;
 	private final Set<String> affectedWorlds;
@@ -87,7 +86,7 @@ public class SlideManager {
 		while (slides[idx].size() >= getMaxSlidesPerTick()) {
 			idx = (idx + 1) % RING_BUFFER_SIZE;
 		}
-		slides[idx].add(new Slide(block.getLocation(), direction, mat.getId(), data));
+		slides[idx].add(new Slide(block.getLocation(), direction, mat.getId(), data, immediate));
 		totalSlidesScheduled++;
 
 		LogUtils.fine("schedule slide: " + block.getLocation() + " -> " + direction + ", " + mat + "/" + data);
@@ -178,7 +177,7 @@ public class SlideManager {
 
 	private FallingBlock initiateSlide(Slide slide) {
 		Block b = slide.loc.getBlock();
-		if (wouldSlide(b) == null) {
+		if (wouldSlide(b) == null || ((b.getTypeId() != slide.blockType || b.getData() != slide.data) && !slide.immediate)) {
 			// sanity check; ensure the block can still slide now
 			return null;
 		}
@@ -226,16 +225,18 @@ public class SlideManager {
 	}
 
 	private class Slide {
-		final Location loc;
-		final int blockType;
-		final byte data;
-		final BlockFace direction;
+		private final Location loc;
+		private final int blockType;
+		private final byte data;
+		private final BlockFace direction;
+		private final boolean immediate;
 
-		private Slide(Location loc, BlockFace direction, int blockType, byte data) {
+		private Slide(Location loc, BlockFace direction, int blockType, byte data, boolean immediate) {
 			this.direction = direction;
 			this.loc = loc;
 			this.blockType = blockType;
 			this.data = data;
+			this.immediate = immediate;
 		}
 	}
 
