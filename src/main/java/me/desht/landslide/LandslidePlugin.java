@@ -126,6 +126,7 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 			slideManager.setSlideChance(matName, getConfig().getInt("slide_chance." + matName));
 		}
 		slideManager.setCliffStability(getConfig().getInt("cliff_stability"));
+		slideManager.setDropItems(getConfig().getBoolean("drop_items"));
 	}
 
 	@Override
@@ -162,6 +163,8 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 			slideManager.setCliffStability((Integer) newVal);
 		} else if (key.equals("log_level")) {
 			LogUtils.setLogLevel(newVal.toString());
+		}  else if (key.equals("drop_items")) {
+			slideManager.setDropItems((Boolean) newVal);
 		} else if (key.equals("coloured_console")) {
 			MiscUtil.setColouredConsole((Boolean) newVal);
 		}

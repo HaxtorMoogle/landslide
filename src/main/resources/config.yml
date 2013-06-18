@@ -1,10 +1,11 @@
 log_level: info
-max_slides_per_tick: 20
-max_slides_total: 200
+max_slides_per_tick: 10
+max_slides_total: 25
 slidy_worlds: [ world ]
 cliff_stability: 50
 coloured_console: true
 explode_effect_chance: 5
+drop_items: false
 slide_chance:
   dirt: 85
   grass: 60
