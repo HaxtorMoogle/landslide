@@ -19,6 +19,8 @@ package me.desht.landslide;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Random;
+import java.util.logging.Level;
 
 import me.desht.dhutils.ConfigurationListener;
 import me.desht.dhutils.ConfigurationManager;
@@ -27,9 +29,11 @@ import me.desht.dhutils.LogUtils;
 import me.desht.dhutils.MiscUtil;
 import me.desht.dhutils.commands.CommandManager;
 import me.desht.landslide.commands.GetcfgCommand;
+import me.desht.landslide.commands.KaboomCommand;
 import me.desht.landslide.commands.ReloadCommand;
 import me.desht.landslide.commands.SetcfgCommand;
 
+import org.bukkit.block.BlockFace;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.event.Listener;
@@ -37,14 +41,16 @@ import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.mcstats.MetricsLite;
 
-import com.avaje.ebean.LogLevel;
-
 public class LandslidePlugin extends JavaPlugin implements Listener, ConfigurationListener {
 
-	private final SlideManager slideManager = new SlideManager();
+	public static final BlockFace[] horizontalFaces = { BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST };
+	public static final BlockFace[] allFaces = { BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST, BlockFace.UP, BlockFace.DOWN };
+
+	private final SlideManager slideManager = new SlideManager(this);
 	private final CommandManager cmds = new CommandManager(this);
 
 	private ConfigurationManager configManager;
+	private final Random random = new Random();
 
 	@Override
 	public void onEnable() {
@@ -57,6 +63,7 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 		cmds.registerCommand(new ReloadCommand());
 		cmds.registerCommand(new GetcfgCommand());
 		cmds.registerCommand(new SetcfgCommand());
+		cmds.registerCommand(new KaboomCommand());
 
 		processConfig();
 
@@ -89,13 +96,17 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 	}
 
 	private void setupMetrics() {
-        try {
-                MetricsLite metrics = new MetricsLite(this);
-                metrics.start();
-        } catch (IOException e) {
-                LogUtils.warning("Couldn't submit metrics stats: " + e.getMessage());
-        }
-}
+		try {
+			MetricsLite metrics = new MetricsLite(this);
+			metrics.start();
+		} catch (IOException e) {
+			LogUtils.warning("Couldn't submit metrics stats: " + e.getMessage());
+		}
+	}
+
+	public Random getRandom() {
+		return random;
+	}
 
 	public ConfigurationManager getConfigManager() {
 		return configManager;
@@ -138,7 +149,7 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 			}
 		} else if (key.equals("log_level")) {
 			try {
-				LogLevel.valueOf(newVal.toString());
+				Level.parse(newVal.toString().toUpperCase());
 			} catch (IllegalArgumentException e) {
 				throw new DHUtilsException(e.getMessage());
 			}

@@ -5,10 +5,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 
-import me.desht.dhutils.DHUtilsException;
 import me.desht.dhutils.LogUtils;
 
 import org.bukkit.Location;
@@ -22,14 +20,12 @@ public class SlideManager {
 	private static final int RING_BUFFER_SIZE = 30;
 	private static final int DROP_DELAY = 6;
 	private static final int MAX_SLIDE_DELAY = 20; // must be < RING_BUFFER_SIZE - DROP_DELAY
-	private static final BlockFace[] faceChecks = { BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST };
-	private static final Vector dropDown = new Vector(0.0, 0.0, 0.0);
 
-	private final Random random;
 	private final Set<String> affectedWorlds;
 	private final Map<Integer,Integer> slideChances;
+	private final LandslidePlugin plugin;
 
-	private List<Slide>[] slides;
+	private List<ScheduledBlockMove>[] slides;
 	private List<Drop>[] drops;
 	private int pointer;
 	private int totalSlidesScheduled;
@@ -39,16 +35,16 @@ public class SlideManager {
 	private int cliffStability;
 
 	@SuppressWarnings("unchecked")
-	public SlideManager() {
+	public SlideManager(LandslidePlugin plugin) {
+		this.plugin = plugin;
 		slides = new ArrayList[RING_BUFFER_SIZE];
 		for (int i = 0; i < RING_BUFFER_SIZE; i++) {
-			slides[i] = new ArrayList<SlideManager.Slide>();
+			slides[i] = new ArrayList<ScheduledBlockMove>();
 		}
 		drops  = new ArrayList[RING_BUFFER_SIZE];
 		for (int i = 0; i < RING_BUFFER_SIZE; i++) {
 			drops[i] = new ArrayList<SlideManager.Drop>();
 		}
-		random = new Random();
 		pointer = 0;
 		totalSlidesScheduled = 0;
 		dropItems = false;
@@ -61,8 +57,8 @@ public class SlideManager {
 		if (slides[pointer].size() > 0) {
 			LogUtils.fine("pointer = " + pointer + " - " + slides[pointer].size() + " blocks to slide");
 		}
-		for (Slide slide : new ArrayList<Slide>(slides[pointer])) {
-			initiateSlide(slide);
+		for (ScheduledBlockMove slide : new ArrayList<ScheduledBlockMove>(slides[pointer])) {
+			slide.initiateMove();
 		}
 		for (Drop drop : new ArrayList<Drop>(drops[pointer])) {
 			initiateDrop(drop);
@@ -78,8 +74,33 @@ public class SlideManager {
 			return false;
 		}
 
-		int delay = immediate ? 0 : random.nextInt(MAX_SLIDE_DELAY);
+		Slide slide = new Slide(block.getLocation(), direction, mat.getId(), data, immediate);
+		int delay = immediate ? 0 : plugin.getRandom().nextInt(MAX_SLIDE_DELAY);
 
+		if (scheduleOperation(slide, delay)) {
+			LogUtils.fine("scheduled slide: " + block.getLocation() + " -> " + direction + ", " + mat + "/" + data);
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	public boolean scheduleBlockSlide(Block block, BlockFace direction) {
+		return scheduleBlockSlide(block, direction, block.getType(), block.getData(), false);
+	}
+
+	public boolean scheduleBlockFling(Block block, int delay, Vector vec, Vector offset) {
+		delay =  plugin.getRandom().nextInt(MAX_SLIDE_DELAY);
+		Fling fling = new Fling(block.getLocation().add(offset), vec, block.getTypeId(), block.getData());
+		if (scheduleOperation(fling, delay)) {
+			LogUtils.fine("scheduled fling: " + block.getLocation() + " -> " + vec);
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	private boolean scheduleOperation(ScheduledBlockMove operation, int delay) {
 		int idx = (pointer + delay) % RING_BUFFER_SIZE;
 		int n = 0;
 		while (slides[idx].size() >= getMaxSlidesPerTick()) {
@@ -88,15 +109,9 @@ public class SlideManager {
 				return false;
 			}
 		}
-		slides[idx].add(new Slide(block.getLocation(), direction, mat.getId(), data, immediate));
+		slides[idx].add(operation);
 		totalSlidesScheduled++;
-
-		LogUtils.fine("schedule slide: " + block.getLocation() + " -> " + direction + ", " + mat + "/" + data);
 		return true;
-	}
-
-	public boolean scheduleBlockSlide(Block block, BlockFace direction) {
-		return scheduleBlockSlide(block, direction, block.getType(), block.getData(), false);
 	}
 
 	public void setMaxSlidesPerTick(int max) {
@@ -153,7 +168,7 @@ public class SlideManager {
 		}
 		Block above = block.getRelative(BlockFace.UP);
 		List<BlockFace>	possibles = new ArrayList<BlockFace>();
-		for (BlockFace face : faceChecks) {
+		for (BlockFace face : LandslidePlugin.horizontalFaces) {
 			if (!below.getRelative(face).getType().isSolid() && !block.getRelative(face).getType().isSolid() && !above.getRelative(face).getType().isSolid()) {
 				possibles.add(face);
 			}
@@ -161,7 +176,7 @@ public class SlideManager {
 		switch (possibles.size()) {
 		case 0: return null;
 		case 1: return possibles.get(0);
-		default: return possibles.get(random.nextInt(possibles.size()));
+		default: return possibles.get(plugin.getRandom().nextInt(possibles.size()));
 		}
 	}
 
@@ -170,45 +185,11 @@ public class SlideManager {
 		if (chance == null) {
 			chance = 0;
 		}
-		return random.nextInt(100) < chance;
+		return plugin.getRandom().nextInt(100) < chance;
 	}
 
 	public void setCliffStability(int stability) {
 		this.cliffStability = stability;
-	}
-
-	private FallingBlock initiateSlide(Slide slide) {
-		Block b = slide.loc.getBlock();
-		if (wouldSlide(b) == null || ((b.getTypeId() != slide.blockType || b.getData() != slide.data) && !slide.immediate)) {
-			// sanity check; ensure the block can still slide now
-			return null;
-		}
-
-		Block above = b.getRelative(BlockFace.UP);
-
-		FallingBlock fb;
-		if (above.getType().isSolid()) {
-			if (random.nextInt(100) < cliffStability) {
-				return null;
-			}
-			b.setType(Material.AIR);
-			// start with the block out of its hole - can't slide it sideways with a block above
-			Block toSide = slide.loc.getBlock().getRelative(slide.direction);
-			fb = slide.loc.getWorld().spawnFallingBlock(toSide.getLocation(), slide.blockType, slide.data);
-			float force = random.nextFloat() / 2.0f;
-			fb.setVelocity(new Vector(slide.direction.getModX() * force, -0.01, slide.direction.getModZ() * force));
-		} else {
-			b.setType(Material.AIR);
-			fb = slide.loc.getWorld().spawnFallingBlock(slide.loc.add(0.0, 0.15, 0.0), slide.blockType, slide.data);
-			double x = slide.direction.getModX() / 4.6;
-			double z = slide.direction.getModZ() / 4.6;
-			fb.setVelocity(new Vector(x, slide.direction == BlockFace.DOWN ? 0.0 : 0.15, z));
-		}
-		if (fb.getVelocity().getY() > 0.0) {
-			scheduleDrop(fb);
-		}
-		fb.setDropItem(getDropItems());
-		return fb;
 	}
 
 	private void initiateDrop(Drop drop) {
@@ -218,7 +199,11 @@ public class SlideManager {
 		loc.setX(Math.round(loc.getX() * 2.0) / 2.0);
 		loc.setZ(Math.round(loc.getZ() * 2.0) / 2.0);
 		drop.fb.teleport(loc);
-		drop.fb.setVelocity(dropDown);
+		// halt the block's lateral velocity, making it continue straight down
+		Vector vec = drop.fb.getVelocity();
+		vec.setX(0.0);
+		vec.setZ(0.0);
+		drop.fb.setVelocity(vec);
 	}
 
 	private void scheduleDrop(FallingBlock fb) {
@@ -226,7 +211,7 @@ public class SlideManager {
 		drops[idx].add(new Drop(fb));
 	}
 
-	private class Slide {
+	private class Slide implements ScheduledBlockMove {
 		private final Location loc;
 		private final int blockType;
 		private final byte data;
@@ -239,6 +224,63 @@ public class SlideManager {
 			this.blockType = blockType;
 			this.data = data;
 			this.immediate = immediate;
+		}
+
+		@Override
+		public FallingBlock initiateMove() {
+			Block b = loc.getBlock();
+			if (wouldSlide(b) == null || ((b.getTypeId() != blockType || b.getData() != data) && !immediate)) {
+				// sanity check; ensure the block can still slide now
+				return null;
+			}
+
+			Block above = b.getRelative(BlockFace.UP);
+
+			FallingBlock fb;
+			if (above.getType().isSolid()) {
+				if (plugin.getRandom().nextInt(100) < cliffStability) {
+					return null;
+				}
+				b.setType(Material.AIR);
+				// start with the block out of its hole - can't slide it sideways with a block above
+				Block toSide = loc.getBlock().getRelative(direction);
+				fb = loc.getWorld().spawnFallingBlock(toSide.getLocation(), blockType, data);
+				float force = plugin.getRandom().nextFloat() / 2.0f;
+				fb.setVelocity(new Vector(direction.getModX() * force, -0.01, direction.getModZ() * force));
+			} else {
+				b.setType(Material.AIR);
+				fb = loc.getWorld().spawnFallingBlock(loc.add(0.0, 0.15, 0.0), blockType, data);
+				double x = direction.getModX() / 4.6;
+				double z = direction.getModZ() / 4.6;
+				fb.setVelocity(new Vector(x, direction == BlockFace.DOWN ? 0.0 : 0.15, z));
+			}
+			if (fb.getVelocity().getY() > 0.0) {
+				scheduleDrop(fb);
+			}
+			fb.setDropItem(getDropItems());
+			return fb;
+		}
+	}
+
+	private class Fling implements ScheduledBlockMove {
+		private final Location loc;
+		private final Vector vec;
+		private int blockType;
+		private byte data;
+
+		private Fling(Location location, Vector vec, int blockType, byte data) {
+			this.loc = location;
+			this.vec = vec;
+			this.blockType = blockType;
+			this.data = data;
+		}
+
+		@Override
+		public FallingBlock initiateMove() {
+			FallingBlock fb = loc.getWorld().spawnFallingBlock(loc, blockType, data);
+			fb.setVelocity(vec);
+			fb.setDropItem(getDropItems());
+			return fb;
 		}
 	}
 

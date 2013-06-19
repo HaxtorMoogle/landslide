@@ -26,3 +26,6 @@ permissions:
   landslide.commands.setcfg:
     description: Allow the plugin configuration to be modified
     default: op
+  landslide.commands.kaboom:
+    description: Allow big explosions to be created
+    default: op
