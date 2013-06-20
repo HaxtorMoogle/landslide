@@ -5,7 +5,7 @@ slidy_worlds: [ ]
 cliff_stability: 50
 coloured_console: true
 explode_effect_chance: 5
-drop_items: false
+drop_items: true
 falling_block_damage: 0
 slide_chance:
   dirt: 85
