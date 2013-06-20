@@ -89,8 +89,8 @@ public class SlideManager {
 		return scheduleBlockSlide(block, direction, block.getType(), block.getData(), false);
 	}
 
-	public boolean scheduleBlockFling(Block block, int delay, Vector vec, Vector offset) {
-		delay =  plugin.getRandom().nextInt(MAX_SLIDE_DELAY);
+	public boolean scheduleBlockFling(Block block, Vector vec, Vector offset) {
+		int delay =  plugin.getRandom().nextInt(MAX_SLIDE_DELAY);
 		Fling fling = new Fling(block.getLocation().add(offset), vec, block.getTypeId(), block.getData());
 		if (scheduleOperation(fling, delay)) {
 			LogUtils.fine("scheduled fling: " + block.getLocation() + " -> " + vec);
