@@ -1,7 +1,7 @@
 log_level: info
 max_slides_per_tick: 10
 max_slides_total: 25
-slidy_worlds: [ world ]
+slidy_worlds: [ ]
 cliff_stability: 50
 coloured_console: true
 explode_effect_chance: 5
