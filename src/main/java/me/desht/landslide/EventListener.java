@@ -114,7 +114,7 @@ public class EventListener implements Listener {
 		// we don't drop items; instead any affected blocks have a chance to become a (high-speed) falling block
 		event.setYield(0f);
 
-		final Location centre = event.getLocation();
+		Location centre = event.getLocation();
 
 		double distMax0 = 0.0;
 		for (Block b : event.blockList()) {
@@ -126,14 +126,23 @@ public class EventListener implements Listener {
 
 		// work out a good direction to bias the block flinging - try to send them towards open air
 		Block centreBlock = centre.getBlock();
+		if (!centreBlock.getType().isSolid()) {
+			centreBlock = findNearestSolid(centreBlock);
+			centre = centreBlock.getLocation();
+		}
 		Vector dirModifier = new Vector(0.0, 0.0, 0.0);
+		int n = 0;
 		for (BlockFace face : LandslidePlugin.allFaces) {
 			Block b1 = centreBlock.getRelative(face);
 			if (!b1.getType().isSolid()) {
-				dirModifier.add(new Vector(face.getModX() * plugin.getRandom().nextFloat() * 2.0,
-				                           face.getModY() * plugin.getRandom().nextFloat() * 2.0,
-				                           face.getModZ() * plugin.getRandom().nextFloat() * 2.0));
+				dirModifier.add(new Vector(face.getModX() * (plugin.getRandom().nextFloat() * 1.0 + 1.0),
+				                           face.getModY() * (plugin.getRandom().nextFloat() * 1.0 + 1.0),
+				                           face.getModZ() * (plugin.getRandom().nextFloat() * 1.0 + 1.0)));
+				n++;
 			}
+		}
+		if (n > 1) {
+			dirModifier = dirModifier.multiply(1.0 / n);
 		}
 
 		final double distMax = Math.sqrt(distMax0);
@@ -151,8 +160,18 @@ public class EventListener implements Listener {
 			double dist = Math.sqrt(xOff * xOff + yOff * yOff + zOff * zOff);
 			double power = Math.abs((double)distMax - (double)dist) / 3.0;
 			Vector vec = new Vector(xOff, yOff, zOff).normalize().multiply(forceMult * power);
-			plugin.getSlideManager().scheduleBlockFling(b, vec, dirModifier);
+			plugin.getSlideManager().scheduleBlockFling(b, vec.clone(), dirModifier.clone());
 		}
+	}
+
+	private Block findNearestSolid(Block b) {
+		for (BlockFace face : LandslidePlugin.allFaces) {
+			Block b1 = b.getRelative(face);
+			if (b1.getType().isSolid()) {
+				return b1;
+			}
+		}
+		return b;
 	}
 
 	private boolean explosionEventApplies(Entity e) {

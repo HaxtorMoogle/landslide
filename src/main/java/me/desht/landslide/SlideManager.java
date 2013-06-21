@@ -18,8 +18,7 @@ import org.bukkit.util.Vector;
 
 public class SlideManager {
 	private static final int RING_BUFFER_SIZE = 30;
-	private static final int DROP_DELAY = 6;
-	private static final int MAX_SLIDE_DELAY = 20; // must be < RING_BUFFER_SIZE - DROP_DELAY
+	private static final int MAX_SLIDE_DELAY = 20;
 
 	private final Set<String> affectedWorlds;
 	private final Map<Integer,Integer> slideChances;
@@ -91,7 +90,8 @@ public class SlideManager {
 
 	public boolean scheduleBlockFling(Block block, Vector vec, Vector offset) {
 		int delay =  plugin.getRandom().nextInt(MAX_SLIDE_DELAY);
-		Fling fling = new Fling(block.getLocation().add(offset), vec, block.getTypeId(), block.getData());
+		Vector offset2 = offset.multiply(0.5);
+		Fling fling = new Fling(block.getLocation().add(offset), vec.add(offset2), block.getTypeId(), block.getData());
 		if (scheduleOperation(fling, delay)) {
 			LogUtils.fine("scheduled fling: " + block.getLocation() + " -> " + vec);
 			return true;
@@ -206,9 +206,11 @@ public class SlideManager {
 		drop.fb.setVelocity(vec);
 	}
 
-	private void scheduleDrop(FallingBlock fb) {
-		int idx = (pointer + DROP_DELAY) % RING_BUFFER_SIZE;
-		drops[idx].add(new Drop(fb));
+	private void scheduleDrop(FallingBlock fb, int delay) {
+		if (delay != 0) {
+			int idx = (pointer + delay) % RING_BUFFER_SIZE;
+			drops[idx].add(new Drop(fb));
+		}
 	}
 
 	private class Slide implements ScheduledBlockMove {
@@ -246,17 +248,15 @@ public class SlideManager {
 				Block toSide = loc.getBlock().getRelative(direction);
 				fb = loc.getWorld().spawnFallingBlock(toSide.getLocation(), blockType, data);
 				float force = plugin.getRandom().nextFloat() / 2.0f;
-				fb.setVelocity(new Vector(direction.getModX() * force, -0.01, direction.getModZ() * force));
+				fb.setVelocity(new Vector(direction.getModX() * force, 0.0, direction.getModZ() * force));
 			} else {
 				b.setType(Material.AIR);
-				fb = loc.getWorld().spawnFallingBlock(loc.add(0.0, 0.15, 0.0), blockType, data);
-				double x = direction.getModX() / 4.6;
-				double z = direction.getModZ() / 4.6;
+				fb = loc.getWorld().spawnFallingBlock(loc.add(0.0, direction == BlockFace.DOWN ? 0.0 : 0.15, 0.0), blockType, data);
+				double x = direction.getModX() / 4.7;
+				double z = direction.getModZ() / 4.7;
 				fb.setVelocity(new Vector(x, direction == BlockFace.DOWN ? 0.0 : 0.15, z));
 			}
-			if (fb.getVelocity().getY() > 0.0) {
-				scheduleDrop(fb);
-			}
+			scheduleDrop(fb, (int)(Math.abs((fb.getVelocity().getX() + fb.getVelocity().getZ()) / 0.0354)));
 			fb.setDropItem(getDropItems());
 			return fb;
 		}

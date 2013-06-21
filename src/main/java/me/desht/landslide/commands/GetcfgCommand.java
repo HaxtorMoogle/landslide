@@ -21,7 +21,7 @@ public class GetcfgCommand extends AbstractCommand {
 	public GetcfgCommand() {
 		super("landslide getcfg", 0, 1);
 		setPermissionNode("landslide.commands.getcfg");
-		setUsage("/<command> getcfg  [<config-key>]");
+		setUsage("/<command> getcfg [<config-key>]");
 	}
 
 	@Override
