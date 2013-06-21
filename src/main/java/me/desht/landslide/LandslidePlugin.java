@@ -26,10 +26,12 @@ import me.desht.dhutils.ConfigurationListener;
 import me.desht.dhutils.ConfigurationManager;
 import me.desht.dhutils.DHUtilsException;
 import me.desht.dhutils.LogUtils;
+import me.desht.dhutils.MessagePager;
 import me.desht.dhutils.MiscUtil;
 import me.desht.dhutils.commands.CommandManager;
 import me.desht.landslide.commands.GetcfgCommand;
 import me.desht.landslide.commands.KaboomCommand;
+import me.desht.landslide.commands.PageCommand;
 import me.desht.landslide.commands.ReloadCommand;
 import me.desht.landslide.commands.SetcfgCommand;
 
@@ -64,8 +66,12 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 		cmds.registerCommand(new GetcfgCommand());
 		cmds.registerCommand(new SetcfgCommand());
 		cmds.registerCommand(new KaboomCommand());
+		cmds.registerCommand(new PageCommand());
 
 		processConfig();
+
+		MessagePager.setPageCmd("/landslide page [#|n|p]");
+		MessagePager.setDefaultPageSize(getConfig().getInt("pager.lines", 0));
 
 		PluginManager pm = this.getServer().getPluginManager();
 		pm.registerEvents(new EventListener(this), this);

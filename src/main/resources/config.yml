@@ -20,3 +20,5 @@ fancy_explosions:
 explosions:
   force_mult: 1.0
   yield_chance: 50
+pager:
+  lines: 0
