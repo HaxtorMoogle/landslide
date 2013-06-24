@@ -196,8 +196,8 @@ public class SlideManager {
 		Location loc = drop.fb.getLocation();
 		// align the block neatly on a 0.5 boundary so it will drop cleanly onto the block below,
 		// minimising the chance of it breaking and dropping an item
-		loc.setX(Math.round(loc.getX() * 2.0) / 2.0);
-		loc.setZ(Math.round(loc.getZ() * 2.0) / 2.0);
+		loc.setX(Math.floor(loc.getX()) + 0.5);
+		loc.setZ(Math.floor(loc.getZ()) + 0.5);
 		drop.fb.teleport(loc);
 		// halt the block's lateral velocity, making it continue straight down
 		Vector vec = drop.fb.getVelocity();
@@ -248,7 +248,7 @@ public class SlideManager {
 				Block toSide = loc.getBlock().getRelative(direction);
 				fb = loc.getWorld().spawnFallingBlock(toSide.getLocation(), blockType, data);
 				float force = plugin.getRandom().nextFloat() / 2.0f;
-				fb.setVelocity(new Vector(direction.getModX() * force, 0.0, direction.getModZ() * force));
+				fb.setVelocity(new Vector(direction.getModX() * force, 0.15, direction.getModZ() * force));
 			} else {
 				b.setType(Material.AIR);
 				fb = loc.getWorld().spawnFallingBlock(loc.add(0.0, direction == BlockFace.DOWN ? 0.0 : 0.15, 0.0), blockType, data);
