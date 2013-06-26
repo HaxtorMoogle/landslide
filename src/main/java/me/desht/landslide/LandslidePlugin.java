@@ -35,6 +35,7 @@ import me.desht.landslide.commands.PageCommand;
 import me.desht.landslide.commands.ReloadCommand;
 import me.desht.landslide.commands.SetcfgCommand;
 
+import org.bukkit.Material;
 import org.bukkit.block.BlockFace;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -49,6 +50,7 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 	public static final BlockFace[] allFaces = { BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST, BlockFace.UP, BlockFace.DOWN };
 
 	private final SlideManager slideManager = new SlideManager(this);
+	private final BlockTransform transform = new BlockTransform();
 	private final CommandManager cmds = new CommandManager(this);
 
 	private ConfigurationManager configManager;
@@ -122,6 +124,13 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 		return slideManager;
 	}
 
+	/**
+	 * @return the transform
+	 */
+	public BlockTransform getTransform() {
+		return transform;
+	}
+
 	public void processConfig() {
 		String level = getConfig().getString("log_level");
 		try {
@@ -144,6 +153,8 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 		}
 		slideManager.setCliffStability(getConfig().getInt("cliff_stability"));
 		slideManager.setDropItems(getConfig().getBoolean("drop_items"));
+
+		transform.processConfig(getConfig().getConfigurationSection("transform"));
 	}
 
 	@Override
@@ -159,6 +170,12 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 			} catch (IllegalArgumentException e) {
 				throw new DHUtilsException(e.getMessage());
 			}
+		} else if (key.startsWith("transform.")) {
+			String s = key.substring(key.indexOf('.') + 1);
+			Material from = Material.matchMaterial(s);
+			if (from == null) throw new DHUtilsException("Invalid material: " + s);
+			Material to = Material.matchMaterial((String) newVal);
+			if (to == null) throw new DHUtilsException("Invalid material: " + newVal);
 		}
 	}
 
@@ -184,6 +201,8 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 			slideManager.setDropItems((Boolean) newVal);
 		} else if (key.equals("coloured_console")) {
 			MiscUtil.setColouredConsole((Boolean) newVal);
+		} else if (key.startsWith("transform.")) {
+			transform.add(key.substring(key.indexOf('.') + 1), (String)newVal);
 		}
 	}
 }

@@ -20,5 +20,9 @@ fancy_explosions:
 explosions:
   force_mult: 1.0
   yield_chance: 50
+drop_slidy_orphans: true
+drop_nonslidy_orphans: false
+transform:
+  grass: dirt
 pager:
   lines: 0
