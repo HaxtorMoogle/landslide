@@ -15,7 +15,7 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with Landslide.  If not, see <http://www.gnu.org/licenses/>.
-*/
+ */
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,16 +31,23 @@ import org.bukkit.entity.EnderDragon;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.FallingBlock;
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Player;
 import org.bukkit.entity.TNTPrimed;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPhysicsEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.util.Vector;
 
+/**
+ * Note that all listener methods run with EventPriority.HIGH, giving other plugins a chance
+ * to cancel the various events first.
+ */
 public class EventListener implements Listener {
 
 	private LandslidePlugin plugin;
@@ -49,80 +56,92 @@ public class EventListener implements Listener {
 		this.plugin = plugin;
 	}
 
-	@EventHandler
+	@EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
 	public void onBlockPlace(BlockPlaceEvent event) {
-		if (plugin.getSlideManager().isWorldAffected(event.getBlock().getWorld().getName())) {
-			checkForSlide(event.getBlock());
+		if (!plugin.getSlideManager().isWorldAffected(event.getBlock().getWorld().getName())) {
+			return;
 		}
+		checkForSlide(event.getBlock());
 	}
 
-	@EventHandler
+	@EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
 	public void onBlockLanded(EntityChangeBlockEvent event) {
-		if (event.getEntity() instanceof FallingBlock) {
-			Block block = event.getBlock();
-			if (plugin.getSlideManager().isWorldAffected(block.getWorld().getName())) {
-				FallingBlock fb = (FallingBlock) event.getEntity();
-				LogUtils.fine("falling block landed! " + fb.getMaterial() + " -> " + block);
-				if (checkForSlide(block, event.getTo(), event.getData(), true)) {
-					// the block continues to slide
-					event.setCancelled(true);
-				} else {
-					if (plugin.getRandom().nextInt(100) < plugin.getConfig().getInt("explode_effect_chance")) {
-						fb.getWorld().createExplosion(fb.getLocation(), 0.0f);
-					}
-				}
-				checkForSlide(block.getRelative(BlockFace.DOWN));
-				int dmg = plugin.getConfig().getInt("falling_block_damage");
-				if (dmg > 0) {
-					Location loc = block.getLocation();
-					for (Entity e : loc.getChunk().getEntities()) {
-						if (e instanceof LivingEntity) {
-							e.getLocation(loc);
-							if (loc.getBlockX() == block.getX() && loc.getBlockY() == block.getY() && loc.getBlockZ() == block.getZ()) {
-								((LivingEntity) e).damage(dmg);
-							}
-						}
+		if (!(event.getEntity() instanceof FallingBlock)) {
+			return;
+		}
+		if (!plugin.getSlideManager().isWorldAffected(event.getBlock().getWorld().getName())) {
+			return;
+		}
+
+		Block block = event.getBlock();
+		FallingBlock fb = (FallingBlock) event.getEntity();
+		LogUtils.fine("falling block landed! " + fb.getMaterial() + " -> " + block);
+		if (checkForSlide(block, event.getTo(), event.getData(), true)) {
+			// the block continues to slide - don't waste time forming a true block
+			// (checkForSlide() has created a new FallingBlock entity)
+			event.setCancelled(true);
+		} else {
+			// the block has landed
+			if (plugin.getRandom().nextInt(100) < plugin.getConfig().getInt("explode_effect_chance")) {
+				fb.getWorld().createExplosion(fb.getLocation(), 0.0f);
+			}
+		}
+
+		// see if the block we landed on can be dislodged
+		checkForSlide(block.getRelative(BlockFace.DOWN));
+
+		// anything standing in the way?
+		int dmg = plugin.getConfig().getInt("falling_block_damage");
+		if (dmg > 0) {
+			Location loc = block.getLocation();
+			for (Entity e : loc.getChunk().getEntities()) {
+				if (e instanceof LivingEntity) {
+					e.getLocation(loc);
+					if (loc.getBlockX() == block.getX() && loc.getBlockY() == block.getY() && loc.getBlockZ() == block.getZ()) {
+						((LivingEntity) e).damage(dmg);
 					}
 				}
 			}
 		}
 	}
 
-	@EventHandler
+	@EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
 	public void onBlockPhysics(BlockPhysicsEvent event) {
-		if (plugin.getSlideManager().isWorldAffected(event.getBlock().getWorld().getName())) {
-			checkForSlide(event.getBlock());
+		if (!plugin.getSlideManager().isWorldAffected(event.getBlock().getWorld().getName())) {
+			return;
 		}
+		checkForSlide(event.getBlock());
 	}
 
-	@EventHandler
+	@EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
 	public void onBlockBreak(BlockBreakEvent event) {
-		if (plugin.getSlideManager().isWorldAffected(event.getBlock().getWorld().getName())) {
-			Block above = event.getBlock().getRelative(BlockFace.UP);
-			List<Block> l = new ArrayList<Block>();
-			List<BlockFace> f = new ArrayList<BlockFace>();
-			for (BlockFace face : LandslidePlugin.horizontalFaces) {
-				Block b1 = above.getRelative(face);
-				if (plugin.getSlideManager().isSlidy(b1.getType())) {
-					l.add(b1);
-					f.add(face.getOppositeFace());
-				}
+		if (!plugin.getSlideManager().isWorldAffected(event.getBlock().getWorld().getName())) {
+			return;
+		}
+		Block above = event.getBlock().getRelative(BlockFace.UP);
+		List<Block> l = new ArrayList<Block>();
+		List<BlockFace> f = new ArrayList<BlockFace>();
+		for (BlockFace face : LandslidePlugin.horizontalFaces) {
+			Block b1 = above.getRelative(face);
+			if (plugin.getSlideManager().getSlideChance(b1.getType()) > plugin.getRandom().nextInt(100)) {
+				l.add(b1);
+				f.add(face.getOppositeFace());
 			}
-			switch (l.size()) {
-			case 0:
-				break;
-			case 1:
-				plugin.getSlideManager().scheduleBlockSlide(l.get(0), f.get(0));
-				break;
-			default:
-				int idx = plugin.getRandom().nextInt(l.size());
-				plugin.getSlideManager().scheduleBlockSlide(l.get(idx), f.get(idx));
-				break;
-			}
+		}
+		switch (l.size()) {
+		case 0:
+			break;
+		case 1:
+			plugin.getSlideManager().scheduleBlockSlide(l.get(0), f.get(0));
+			break;
+		default:
+			int idx = plugin.getRandom().nextInt(l.size());
+			plugin.getSlideManager().scheduleBlockSlide(l.get(idx), f.get(idx));
+			break;
 		}
 	}
 
-	@EventHandler(ignoreCancelled = true)
+	@EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
 	public void onEntityExplode(EntityExplodeEvent event) {
 		if (!explosionEventApplies(event.getEntity())) {
 			return;
@@ -181,6 +200,37 @@ public class EventListener implements Listener {
 		}
 	}
 
+	@EventHandler
+	public void onInteract(PlayerInteractEvent event) {
+		Player player = event.getPlayer();
+		SlideOTron wand = SlideOTron.getWand(player);
+		if (wand == null) {
+			return;
+		}
+		event.setCancelled(true);
+		int quantity = player.getItemInHand().getAmount();
+		switch (event.getAction()) {
+		case LEFT_CLICK_AIR: case LEFT_CLICK_BLOCK:
+			if (player.isSneaking()) {
+				wand.setMode(wand.getMode().nextMode());
+				player.setItemInHand(wand.toItemStack(quantity));
+			} else {
+				wand.activate(plugin, player);
+			}
+			break;
+		case RIGHT_CLICK_AIR: case RIGHT_CLICK_BLOCK:
+			if (player.isSneaking()) {
+				wand.setPower(wand.getPower() - 1);
+			} else {
+				wand.setPower(wand.getPower() + 1);
+			}
+			player.setItemInHand(wand.toItemStack(quantity));
+			break;
+		default:
+			break;
+		}
+	}
+
 	private Block findNearestSolid(Block b) {
 		for (BlockFace face : LandslidePlugin.allFaces) {
 			Block b1 = b.getRelative(face);
@@ -205,7 +255,13 @@ public class EventListener implements Listener {
 	}
 
 	private boolean checkForSlide(Block block, Material mat, byte data, boolean immediate) {
-		if (plugin.getSlideManager().isSlidy(mat)) {
+		int chance = plugin.getSlideManager().getSlideChance(mat);
+		boolean orphan = plugin.isOrphan(block);
+		if (chance > 0 && orphan && plugin.getConfig().getBoolean("drop_slidy_orphans")) {
+			return plugin.getSlideManager().scheduleBlockSlide(block, BlockFace.DOWN, mat, data, true);
+		} else if (orphan && plugin.getConfig().getBoolean("drop_nonslidy_orphans")) {
+			return plugin.getSlideManager().scheduleBlockSlide(block, BlockFace.DOWN, mat, data, true);
+		} else if (chance > plugin.getRandom().nextInt(100)) {
 			BlockFace face = plugin.getSlideManager().wouldSlide(block);
 			if (face != null) {
 				return plugin.getSlideManager().scheduleBlockSlide(block, face, mat, data, immediate);

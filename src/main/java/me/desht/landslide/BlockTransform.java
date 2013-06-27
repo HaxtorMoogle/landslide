@@ -25,7 +25,7 @@ public class BlockTransform {
 		for (String m1 : cs.getKeys(false)) {
 			String m2 = cs.getString(m1);
 			Material mat1 = Material.matchMaterial(m1);
-			Material mat2 = Material.matchMaterial(m2);
+			Material mat2 = m2.isEmpty() ? mat1 : Material.matchMaterial(m2);
 			if (mat1 == null || mat2 == null) {
 				LogUtils.warning("invalid material transform: " + m1 + " -> " + m2);
 			} else {
@@ -36,7 +36,7 @@ public class BlockTransform {
 
 	public void add(String s1, String s2) {
 		Material mat1 = Material.matchMaterial(s1);
-		Material mat2 = Material.matchMaterial(s2);
+		Material mat2 = s2.isEmpty() ? mat1 : Material.matchMaterial(s2);
 		if (mat1 == null || mat2 == null) {
 			LogUtils.warning("invalid material transform: " + s1 + " -> " + s2);
 		} else {

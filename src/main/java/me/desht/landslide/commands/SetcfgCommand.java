@@ -37,6 +37,8 @@ public class SetcfgCommand extends AbstractCommand {
 			} else {
 				if (key.startsWith("slide_chance.") && configManager.check(key) == null) {
 					configManager.insert(key, 0);
+				} else if (key.startsWith("transform.") && configManager.check(key) == null) {
+					configManager.insert(key, "");
 				}
 				configManager.set(key, val);
 			}
@@ -44,7 +46,6 @@ public class SetcfgCommand extends AbstractCommand {
 			MiscUtil.statusMessage(sender, key + " is now set to '&e" + res + "&-'");
 		} catch (DHUtilsException e) {
 			MiscUtil.errorMessage(sender, e.getMessage());
-			MiscUtil.errorMessage(sender, "Use /landslide getcfg to list all valid keys");
 		} catch (IllegalArgumentException e) {
 			MiscUtil.errorMessage(sender, e.getMessage());
 		}

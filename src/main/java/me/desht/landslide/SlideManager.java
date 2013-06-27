@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import me.desht.dhutils.DHUtilsException;
 import me.desht.dhutils.LogUtils;
 
 import org.bukkit.Location;
@@ -32,6 +33,11 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.FallingBlock;
 import org.bukkit.util.Vector;
+
+import com.sk89q.worldguard.bukkit.WGBukkit;
+import com.sk89q.worldguard.protection.flags.DefaultFlag;
+import com.sk89q.worldguard.protection.flags.Flag;
+import com.sk89q.worldguard.protection.flags.StateFlag;
 
 public class SlideManager {
 	private static final int RING_BUFFER_SIZE = 30;
@@ -49,6 +55,8 @@ public class SlideManager {
 	private int maxSlidesPerTick;
 	private int maxSlidesTotal;
 	private int cliffStability;
+	private Boolean worldGuardEnabled;
+	private StateFlag wgFlag;
 
 	@SuppressWarnings("unchecked")
 	public SlideManager(LandslidePlugin plugin) {
@@ -67,6 +75,8 @@ public class SlideManager {
 		affectedWorlds = new HashSet<String>();
 		slideChances = new HashMap<Integer, Integer>();
 		cliffStability = 100;
+		worldGuardEnabled = false;
+		wgFlag = null;
 	}
 
 	public void tick() {
@@ -89,9 +99,12 @@ public class SlideManager {
 		if (totalSlidesScheduled >= getMaxSlidesTotal() || getMaxSlidesPerTick() <= 0) {
 			return false;
 		}
+		if (isProtectedByWG(block)) {
+			return false;
+		}
 
-		Slide slide = new Slide(block.getLocation(), direction, mat.getId(), data, immediate);
-		int delay = immediate ? 0 : plugin.getRandom().nextInt(MAX_SLIDE_DELAY);
+		Slide slide = new Slide(block.getLocation(), direction, mat, data, immediate);
+		int delay = immediate ? 1 : plugin.getRandom().nextInt(MAX_SLIDE_DELAY);
 
 		if (scheduleOperation(slide, delay)) {
 			LogUtils.fine("scheduled slide: " + block.getLocation() + " -> " + direction + ", " + mat + "/" + data);
@@ -108,7 +121,7 @@ public class SlideManager {
 	public boolean scheduleBlockFling(Block block, Vector vec, Vector offset) {
 		int delay =  plugin.getRandom().nextInt(MAX_SLIDE_DELAY);
 		Vector offset2 = offset.multiply(0.5);
-		Fling fling = new Fling(block.getLocation().add(offset), vec.add(offset2), block.getTypeId(), block.getData());
+		Fling fling = new Fling(block.getLocation().add(offset), vec.add(offset2), block.getType(), block.getData());
 		if (scheduleOperation(fling, delay)) {
 			LogUtils.fine("scheduled fling: " + block.getLocation() + " -> " + vec);
 			return true;
@@ -197,16 +210,32 @@ public class SlideManager {
 		}
 	}
 
-	public boolean isSlidy(Material mat) {
-		Integer chance = slideChances.get(mat.getId());
-		if (chance == null) {
-			chance = 0;
-		}
-		return plugin.getRandom().nextInt(100) < chance;
+	public int getSlideChance(Material mat) {
+		return slideChances.containsKey(mat.getId()) ? slideChances.get(mat.getId()) : 0;
 	}
 
 	public void setCliffStability(int stability) {
 		this.cliffStability = stability;
+	}
+
+	public void setWorldGuardEnabled(Boolean enabled) {
+		this.worldGuardEnabled = enabled;
+	}
+
+	public void setWorldGuardFlag(String flagName) {
+		if (flagName == null || flagName.isEmpty()) {
+			return;
+		}
+		flagName = flagName.replace("-", "");
+		for (Flag<?> flag : DefaultFlag.getFlags()) {
+			if (flag.getName().replace("-", "").equalsIgnoreCase(flagName)) {
+				if (flag instanceof StateFlag) {
+					this.wgFlag = (StateFlag) flag;
+					return;
+				}
+            }
+        }
+		LogUtils.warning("bad value for worldguard.use_flag: " + flagName);
 	}
 
 	private void initiateDrop(Drop drop) {
@@ -230,14 +259,23 @@ public class SlideManager {
 		}
 	}
 
+	private boolean isProtectedByWG(Block b) {
+		if (!plugin.isWorldGuardEnabled() || !worldGuardEnabled) {
+			return false;
+		}
+		boolean ret = !WGBukkit.getRegionManager(b.getWorld()).getApplicableRegions(b.getLocation()).allows(wgFlag);
+		if (ret) System.out.println(b + " protected by WG");
+		return ret;
+	}
+
 	private class Slide implements ScheduledBlockMove {
 		private final Location loc;
-		private final int blockType;
+		private final Material blockType;
 		private final byte data;
 		private final BlockFace direction;
 		private final boolean immediate;
 
-		private Slide(Location loc, BlockFace direction, int blockType, byte data, boolean immediate) {
+		private Slide(Location loc, BlockFace direction, Material blockType, byte data, boolean immediate) {
 			this.direction = direction;
 			this.loc = loc;
 			this.blockType = blockType;
@@ -248,7 +286,7 @@ public class SlideManager {
 		@Override
 		public FallingBlock initiateMove() {
 			Block b = loc.getBlock();
-			if (wouldSlide(b) == null || ((b.getTypeId() != blockType || b.getData() != data) && !immediate)) {
+			if (wouldSlide(b) == null || ((b.getType() != blockType || b.getData() != data) && !immediate)) {
 				// sanity check; ensure the block can still slide now
 				return null;
 			}
@@ -263,12 +301,12 @@ public class SlideManager {
 				b.setType(Material.AIR);
 				// start with the block out of its hole - can't slide it sideways with a block above
 				Block toSide = loc.getBlock().getRelative(direction);
-				fb = loc.getWorld().spawnFallingBlock(toSide.getLocation(), blockType, data);
+				fb = loc.getWorld().spawnFallingBlock(toSide.getLocation(), plugin.getTransform().get(blockType), data);
 				float force = plugin.getRandom().nextFloat() / 2.0f;
 				fb.setVelocity(new Vector(direction.getModX() * force, 0.15, direction.getModZ() * force));
 			} else {
 				b.setType(Material.AIR);
-				fb = loc.getWorld().spawnFallingBlock(loc.add(0.0, direction == BlockFace.DOWN ? 0.0 : 0.15, 0.0), blockType, data);
+				fb = loc.getWorld().spawnFallingBlock(loc.add(0.0, direction == BlockFace.DOWN ? 0.0 : 0.15, 0.0), plugin.getTransform().get(blockType), data);
 				double x = direction.getModX() / 4.7;
 				double z = direction.getModZ() / 4.7;
 				fb.setVelocity(new Vector(x, direction == BlockFace.DOWN ? 0.0 : 0.15, z));
@@ -282,10 +320,10 @@ public class SlideManager {
 	private class Fling implements ScheduledBlockMove {
 		private final Location loc;
 		private final Vector vec;
-		private int blockType;
+		private Material blockType;
 		private byte data;
 
-		private Fling(Location location, Vector vec, int blockType, byte data) {
+		private Fling(Location location, Vector vec, Material blockType, byte data) {
 			this.loc = location;
 			this.vec = vec;
 			this.blockType = blockType;
@@ -294,7 +332,7 @@ public class SlideManager {
 
 		@Override
 		public FallingBlock initiateMove() {
-			FallingBlock fb = loc.getWorld().spawnFallingBlock(loc, blockType, data);
+			FallingBlock fb = loc.getWorld().spawnFallingBlock(loc, plugin.getTransform().get(blockType), data);
 			fb.setVelocity(vec);
 			fb.setDropItem(getDropItems());
 			return fb;

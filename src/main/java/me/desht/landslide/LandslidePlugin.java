@@ -25,6 +25,7 @@ import java.util.logging.Level;
 import me.desht.dhutils.ConfigurationListener;
 import me.desht.dhutils.ConfigurationManager;
 import me.desht.dhutils.DHUtilsException;
+import me.desht.dhutils.DHValidate;
 import me.desht.dhutils.LogUtils;
 import me.desht.dhutils.MessagePager;
 import me.desht.dhutils.MiscUtil;
@@ -32,17 +33,26 @@ import me.desht.dhutils.commands.CommandManager;
 import me.desht.landslide.commands.GetcfgCommand;
 import me.desht.landslide.commands.KaboomCommand;
 import me.desht.landslide.commands.PageCommand;
+import me.desht.landslide.commands.PowerCommand;
 import me.desht.landslide.commands.ReloadCommand;
 import me.desht.landslide.commands.SetcfgCommand;
+import me.desht.landslide.commands.WandCommand;
 
 import org.bukkit.Material;
+import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.event.Listener;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.mcstats.MetricsLite;
+
+import com.sk89q.worldguard.bukkit.WorldGuardPlugin;
+import com.sk89q.worldguard.protection.flags.DefaultFlag;
+import com.sk89q.worldguard.protection.flags.Flag;
+import com.sk89q.worldguard.protection.flags.StateFlag;
 
 public class LandslidePlugin extends JavaPlugin implements Listener, ConfigurationListener {
 
@@ -55,6 +65,7 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 
 	private ConfigurationManager configManager;
 	private final Random random = new Random();
+	private WorldGuardPlugin worldGuardPlugin = null;
 
 	@Override
 	public void onEnable() {
@@ -64,11 +75,15 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 
 		MiscUtil.init(this);
 
+		setupWorldGuard();
+
 		cmds.registerCommand(new ReloadCommand());
 		cmds.registerCommand(new GetcfgCommand());
 		cmds.registerCommand(new SetcfgCommand());
 		cmds.registerCommand(new KaboomCommand());
 		cmds.registerCommand(new PageCommand());
+		cmds.registerCommand(new PowerCommand());
+		cmds.registerCommand(new WandCommand());
 
 		processConfig();
 
@@ -112,6 +127,16 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 		}
 	}
 
+	private void setupWorldGuard() {
+	    Plugin plugin = getServer().getPluginManager().getPlugin("WorldGuard");
+
+	    // WorldGuard may not be loaded
+	    if (plugin != null && (plugin instanceof WorldGuardPlugin)) {
+	    	LogUtils.fine("WorldGuard detected");
+		    worldGuardPlugin =  (WorldGuardPlugin) plugin;
+	    }
+	}
+
 	public Random getRandom() {
 		return random;
 	}
@@ -122,6 +147,14 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 
 	public SlideManager getSlideManager() {
 		return slideManager;
+	}
+
+	public boolean isWorldGuardEnabled() {
+		return worldGuardPlugin != null;
+	}
+
+	public WorldGuardPlugin getWorldGuardPlugin() {
+		return worldGuardPlugin;
 	}
 
 	/**
@@ -153,17 +186,32 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 		}
 		slideManager.setCliffStability(getConfig().getInt("cliff_stability"));
 		slideManager.setDropItems(getConfig().getBoolean("drop_items"));
-
+		if (isWorldGuardEnabled()) {
+			slideManager.setWorldGuardEnabled(getConfig().getBoolean("worldguard.enabled"));
+			slideManager.setWorldGuardFlag(getConfig().getString("worldguard.use_flag"));
+		}
 		transform.processConfig(getConfig().getConfigurationSection("transform"));
+	}
+
+	public void validateWorldGuardFlag(String flagName) {
+		String flagName2 = flagName.replace("-", "");
+		for (Flag<?> flag : DefaultFlag.getFlags()) {
+			if (flag.getName().replace("-", "").equalsIgnoreCase(flagName2)) {
+				if (flag instanceof StateFlag) {
+					return;
+				} else {
+					throw new DHUtilsException("Flag " + flagName + " is not a WorldGuard state flag");
+				}
+            }
+        }
+		throw new DHUtilsException("Unknown WorldGuard flag " + flagName);
 	}
 
 	@Override
 	public void onConfigurationValidate(ConfigurationManager configurationManager, String key, Object oldVal, Object newVal) {
 		if (key.startsWith("slide_chance.") || key.equals("cliff_stability")) {
 			int pct = (Integer) newVal;
-			if (pct < 0 || pct > 100) {
-				throw new DHUtilsException("Value must be a percentage (0-100 inclusive)");
-			}
+			DHValidate.isTrue(pct >= 0 && pct <= 100, "Value must be a percentage (0-100 inclusive)");
 		} else if (key.equals("log_level")) {
 			try {
 				Level.parse(newVal.toString().toUpperCase());
@@ -173,9 +221,11 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 		} else if (key.startsWith("transform.")) {
 			String s = key.substring(key.indexOf('.') + 1);
 			Material from = Material.matchMaterial(s);
-			if (from == null) throw new DHUtilsException("Invalid material: " + s);
+			DHValidate.notNull(from, "Invalid material: " + s);
 			Material to = Material.matchMaterial((String) newVal);
-			if (to == null) throw new DHUtilsException("Invalid material: " + newVal);
+			DHValidate.notNull(to, "Invalid material: " + s);
+		} else if (key.equals("worldguard.use_flag") && isWorldGuardEnabled()) {
+			validateWorldGuardFlag((String) newVal);
 		}
 	}
 
@@ -203,6 +253,21 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 			MiscUtil.setColouredConsole((Boolean) newVal);
 		} else if (key.startsWith("transform.")) {
 			transform.add(key.substring(key.indexOf('.') + 1), (String)newVal);
+		} else if (key.equals("worldguard.enabled") && isWorldGuardEnabled()) {
+			slideManager.setWorldGuardEnabled((Boolean) newVal);
+			slideManager.setWorldGuardFlag(getConfig().getString("worldguard.use_flag"));
+		} else if (key.equals("worldguard.use_flag") && isWorldGuardEnabled()) {
+			slideManager.setWorldGuardFlag((String) newVal);
 		}
 	}
+
+	public boolean isOrphan(Block block) {
+		for (BlockFace f : LandslidePlugin.allFaces) {
+			if (block.getRelative(f).getType().isSolid()) {
+				return false;
+			}
+		}
+		return true;
+	}
+
 }

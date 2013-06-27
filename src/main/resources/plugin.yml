@@ -3,6 +3,7 @@ main: me.desht.landslide.LandslidePlugin
 version: ${project.version}
 author: desht
 website: http://dev.bukkit.org/bukkit-mods/landslide
+softdepend: [ WorldGuard ]
 
 commands:
    landslide:
@@ -17,6 +18,9 @@ permissions:
       landslide.commands.reload: true
       landslide.commands.getcfg: true
       landslide.commands.setcfg: true
+      landslide.commands.kaboom: true
+      landslide.commands.wand: true
+      landslide.use.wand: true
   landslide.commands.reload:
     description: Allow reloading of the plugin configuration
     default: op
@@ -28,4 +32,10 @@ permissions:
     default: op
   landslide.commands.kaboom:
     description: Allow big explosions to be created
+    default: op
+  landslide.commands.wand:
+    description: Allow the Slide-O-Tron wand to be obtained
+    default: op
+  landslide.use.wand:
+    description: Allow the Slide-O-Tron wand to be used
     default: op

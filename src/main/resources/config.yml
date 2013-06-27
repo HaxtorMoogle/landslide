@@ -26,3 +26,6 @@ transform:
   grass: dirt
 pager:
   lines: 0
+worldguard:
+  enabled: true
+  use_flag: other-explosion
