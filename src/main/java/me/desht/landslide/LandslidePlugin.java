@@ -60,12 +60,12 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 	public static final BlockFace[] allFaces = { BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST, BlockFace.UP, BlockFace.DOWN };
 
 	private final SlideManager slideManager = new SlideManager(this);
-	private final BlockTransform transform = new BlockTransform();
 	private final CommandManager cmds = new CommandManager(this);
 
 	private ConfigurationManager configManager;
 	private final Random random = new Random();
 	private WorldGuardPlugin worldGuardPlugin = null;
+	private PerWorldConfiguration perWorldConfig;
 
 	@Override
 	public void onEnable() {
@@ -86,6 +86,7 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 		cmds.registerCommand(new WandCommand());
 
 		processConfig();
+		perWorldConfig = new PerWorldConfiguration(this);
 
 		MessagePager.setPageCmd("/landslide page [#|n|p]");
 		MessagePager.setDefaultPageSize(getConfig().getInt("pager.lines", 0));
@@ -130,7 +131,6 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 	private void setupWorldGuard() {
 	    Plugin plugin = getServer().getPluginManager().getPlugin("WorldGuard");
 
-	    // WorldGuard may not be loaded
 	    if (plugin != null && (plugin instanceof WorldGuardPlugin)) {
 	    	LogUtils.fine("WorldGuard detected");
 		    worldGuardPlugin =  (WorldGuardPlugin) plugin;
@@ -149,19 +149,19 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 		return slideManager;
 	}
 
+	/**
+	 * @return the perWorldConfig
+	 */
+	public PerWorldConfiguration getPerWorldConfig() {
+		return perWorldConfig;
+	}
+
 	public boolean isWorldGuardEnabled() {
 		return worldGuardPlugin != null;
 	}
 
 	public WorldGuardPlugin getWorldGuardPlugin() {
 		return worldGuardPlugin;
-	}
-
-	/**
-	 * @return the transform
-	 */
-	public BlockTransform getTransform() {
-		return transform;
 	}
 
 	public void processConfig() {
@@ -176,21 +176,11 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 
 		slideManager.setMaxSlidesPerTick(getConfig().getInt("max_slides_per_tick", 20));
 		slideManager.setMaxSlidesTotal(getConfig().getInt("max_slides_total", 200));
-		slideManager.clearAffectedWorlds();
-		for (String worldName : getConfig().getStringList("slidy_worlds")) {
-			slideManager.setAffectedWorld(worldName);
-		}
-		slideManager.resetSlideChances();
-		for (String matName : getConfig().getConfigurationSection("slide_chance").getKeys(false)) {
-			slideManager.setSlideChance(matName, getConfig().getInt("slide_chance." + matName));
-		}
-		slideManager.setCliffStability(getConfig().getInt("cliff_stability"));
-		slideManager.setDropItems(getConfig().getBoolean("drop_items"));
+
 		if (isWorldGuardEnabled()) {
 			slideManager.setWorldGuardEnabled(getConfig().getBoolean("worldguard.enabled"));
 			slideManager.setWorldGuardFlag(getConfig().getString("worldguard.use_flag"));
 		}
-		transform.processConfig(getConfig().getConfigurationSection("transform"));
 	}
 
 	public void validateWorldGuardFlag(String flagName) {
@@ -209,7 +199,7 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 
 	@Override
 	public void onConfigurationValidate(ConfigurationManager configurationManager, String key, Object oldVal, Object newVal) {
-		if (key.startsWith("slide_chance.") || key.equals("cliff_stability")) {
+		if (key.contains("slide_chance.") && newVal != null || key.contains("cliff_stability") || key.contains("explode_effect_chance")) {
 			int pct = (Integer) newVal;
 			DHValidate.isTrue(pct >= 0 && pct <= 100, "Value must be a percentage (0-100 inclusive)");
 		} else if (key.equals("log_level")) {
@@ -235,29 +225,17 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 			slideManager.setMaxSlidesPerTick((Integer) newVal);
 		} else if (key.equals("max_slides_total")) {
 			slideManager.setMaxSlidesTotal((Integer) newVal);
-		} else if (key.equals("slidy_worlds")) {
-			slideManager.clearAffectedWorlds();
-			for (String worldName : getConfig().getStringList("slidy_worlds")) {
-				slideManager.setAffectedWorld(worldName);
-			}
-		} else if (key.startsWith("slide_chance.")) {
-			String matName = key.substring(key.indexOf('.') + 1);
-			slideManager.setSlideChance(matName, (Integer) newVal);
-		} else if (key.equals("cliff_stability")) {
-			slideManager.setCliffStability((Integer) newVal);
 		} else if (key.equals("log_level")) {
 			LogUtils.setLogLevel(newVal.toString());
-		}  else if (key.equals("drop_items")) {
-			slideManager.setDropItems((Boolean) newVal);
 		} else if (key.equals("coloured_console")) {
 			MiscUtil.setColouredConsole((Boolean) newVal);
-		} else if (key.startsWith("transform.")) {
-			transform.add(key.substring(key.indexOf('.') + 1), (String)newVal);
 		} else if (key.equals("worldguard.enabled") && isWorldGuardEnabled()) {
 			slideManager.setWorldGuardEnabled((Boolean) newVal);
 			slideManager.setWorldGuardFlag(getConfig().getString("worldguard.use_flag"));
 		} else if (key.equals("worldguard.use_flag") && isWorldGuardEnabled()) {
 			slideManager.setWorldGuardFlag((String) newVal);
+		} else {
+			getPerWorldConfig().processKey(getConfig(), key);
 		}
 	}
 

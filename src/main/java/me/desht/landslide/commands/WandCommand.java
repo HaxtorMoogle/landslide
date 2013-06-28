@@ -1,6 +1,5 @@
 package me.desht.landslide.commands;
 
-import me.desht.dhutils.DHUtilsException;
 import me.desht.dhutils.DHValidate;
 import me.desht.dhutils.commands.AbstractCommand;
 import me.desht.landslide.SlideOTron;

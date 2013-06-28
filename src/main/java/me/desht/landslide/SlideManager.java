@@ -18,13 +18,8 @@ along with Landslide.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
-import me.desht.dhutils.DHUtilsException;
 import me.desht.dhutils.LogUtils;
 
 import org.bukkit.Location;
@@ -43,18 +38,14 @@ public class SlideManager {
 	private static final int RING_BUFFER_SIZE = 30;
 	private static final int MAX_SLIDE_DELAY = 20;
 
-	private final Set<String> affectedWorlds;
-	private final Map<Integer,Integer> slideChances;
 	private final LandslidePlugin plugin;
 
 	private List<ScheduledBlockMove>[] slides;
 	private List<Drop>[] drops;
 	private int pointer;
 	private int totalSlidesScheduled;
-	private boolean dropItems;
 	private int maxSlidesPerTick;
 	private int maxSlidesTotal;
-	private int cliffStability;
 	private Boolean worldGuardEnabled;
 	private StateFlag wgFlag;
 
@@ -71,10 +62,6 @@ public class SlideManager {
 		}
 		pointer = 0;
 		totalSlidesScheduled = 0;
-		dropItems = false;
-		affectedWorlds = new HashSet<String>();
-		slideChances = new HashMap<Integer, Integer>();
-		cliffStability = 100;
 		worldGuardEnabled = false;
 		wgFlag = null;
 	}
@@ -160,41 +147,13 @@ public class SlideManager {
 		return maxSlidesTotal;
 	}
 
-	public void setDropItems(boolean dropItems) {
-		this.dropItems = dropItems;
-	}
-
-	public boolean getDropItems() {
-		return dropItems;
-	}
-
-	public void clearAffectedWorlds() {
-		affectedWorlds.clear();
-	}
-
-	public void setAffectedWorld(String worldName) {
-		affectedWorlds.add(worldName);
-	}
-
-	public boolean isWorldAffected(String worldName) {
-		return affectedWorlds.contains(worldName);
-	}
-
-	public void resetSlideChances() {
-		slideChances.clear();
-	}
-
-	public void setSlideChance(String matName, int chance) {
-		Material mat = Material.matchMaterial(matName);
-		if (mat != null) {
-			slideChances.put(mat.getId(), chance);
-		}
-	}
-
 	public BlockFace wouldSlide(Block block) {
 		Block below = block.getRelative(BlockFace.DOWN);
 		if (!below.getType().isSolid()) {
 			return BlockFace.DOWN;
+		}
+		if (!plugin.getPerWorldConfig().getHorizontalSlides(block.getWorld())) {
+			return null;
 		}
 		Block above = block.getRelative(BlockFace.UP);
 		List<BlockFace>	possibles = new ArrayList<BlockFace>();
@@ -208,14 +167,6 @@ public class SlideManager {
 		case 1: return possibles.get(0);
 		default: return possibles.get(plugin.getRandom().nextInt(possibles.size()));
 		}
-	}
-
-	public int getSlideChance(Material mat) {
-		return slideChances.containsKey(mat.getId()) ? slideChances.get(mat.getId()) : 0;
-	}
-
-	public void setCliffStability(int stability) {
-		this.cliffStability = stability;
 	}
 
 	public void setWorldGuardEnabled(Boolean enabled) {
@@ -295,24 +246,24 @@ public class SlideManager {
 
 			FallingBlock fb;
 			if (above.getType().isSolid()) {
-				if (plugin.getRandom().nextInt(100) < cliffStability) {
+				if (plugin.getRandom().nextInt(100) < plugin.getPerWorldConfig().getCliffStability(b.getWorld())) {
 					return null;
 				}
 				b.setType(Material.AIR);
 				// start with the block out of its hole - can't slide it sideways with a block above
 				Block toSide = loc.getBlock().getRelative(direction);
-				fb = loc.getWorld().spawnFallingBlock(toSide.getLocation(), plugin.getTransform().get(blockType), data);
+				fb = loc.getWorld().spawnFallingBlock(toSide.getLocation(), plugin.getPerWorldConfig().getTransform(b.getWorld(), blockType), data);
 				float force = plugin.getRandom().nextFloat() / 2.0f;
 				fb.setVelocity(new Vector(direction.getModX() * force, 0.15, direction.getModZ() * force));
 			} else {
 				b.setType(Material.AIR);
-				fb = loc.getWorld().spawnFallingBlock(loc.add(0.0, direction == BlockFace.DOWN ? 0.0 : 0.15, 0.0), plugin.getTransform().get(blockType), data);
+				fb = loc.getWorld().spawnFallingBlock(loc.add(0.0, direction == BlockFace.DOWN ? 0.0 : 0.15, 0.0), plugin.getPerWorldConfig().getTransform(b.getWorld(), blockType), data);
 				double x = direction.getModX() / 4.7;
 				double z = direction.getModZ() / 4.7;
 				fb.setVelocity(new Vector(x, direction == BlockFace.DOWN ? 0.0 : 0.15, z));
 			}
 			scheduleDrop(fb, (int)(Math.abs((fb.getVelocity().getX() + fb.getVelocity().getZ()) / 0.0354)));
-			fb.setDropItem(getDropItems());
+			fb.setDropItem(plugin.getPerWorldConfig().getDropItems(b.getWorld()));
 			return fb;
 		}
 	}
@@ -332,9 +283,9 @@ public class SlideManager {
 
 		@Override
 		public FallingBlock initiateMove() {
-			FallingBlock fb = loc.getWorld().spawnFallingBlock(loc, plugin.getTransform().get(blockType), data);
+			FallingBlock fb = loc.getWorld().spawnFallingBlock(loc, plugin.getPerWorldConfig().getTransform(loc.getWorld(), blockType), data);
 			fb.setVelocity(vec);
-			fb.setDropItem(getDropItems());
+			fb.setDropItem(plugin.getPerWorldConfig().getDropItems(loc.getWorld()));
 			return fb;
 		}
 	}

@@ -53,6 +53,6 @@ public class BlockTransform {
 	}
 
 	public Material get(Material m) {
-		return map.containsKey(m) ? map.get(m) : m;
+		return map.get(m);
 	}
 }

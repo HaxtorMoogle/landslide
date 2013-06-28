@@ -5,13 +5,13 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import me.desht.dhutils.MiscUtil;
 
 import org.bukkit.ChatColor;
+import org.bukkit.Effect;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.World;
@@ -20,6 +20,7 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.util.BlockIterator;
 
 public class SlideOTron {
 	private static final String DISPLAY_PREFIX = ChatColor.YELLOW + "Slide-O-Tron: " + ChatColor.GOLD;
@@ -122,9 +123,8 @@ public class SlideOTron {
 		meta.setDisplayName(DISPLAY_PREFIX + mode.getText() + POWER_PREFIX + " " + power);
 		List<String> lore = new ArrayList<String>();
 		lore.add(ChatColor.GRAY + ChatColor.ITALIC.toString() + "Left-click: use wand");
-		lore.add(ChatColor.GRAY + ChatColor.ITALIC.toString() + "Shift + Left-click: change mode");
-		lore.add(ChatColor.GRAY + ChatColor.ITALIC.toString() + "Right-click: increase power");
-		lore.add(ChatColor.GRAY + ChatColor.ITALIC.toString() + "Shift + Right-click: decrease power");
+		lore.add(ChatColor.GRAY + ChatColor.ITALIC.toString() + "Right-click: change mode");
+		lore.add(ChatColor.GRAY + ChatColor.ITALIC.toString() + "Shift + Mouse-wheel: change power");
 		meta.setLore(lore);
 		item.setItemMeta(meta);
 		return item;
@@ -179,12 +179,30 @@ public class SlideOTron {
 			}
 			break;
 		case FORCE_SLIDE:
-			b = player.getTargetBlock(transparent, 140);
-			if (b != null && b.getY() != 0 && b.getType() != Material.AIR) {
-				forceSlide(plugin, player, b);
-			} else {
-				player.playSound(player.getLocation(), Sound.NOTE_BASS, 1.0f, 1.0f);
+			BlockIterator iter = new BlockIterator(player, 140);
+			int n = 0;
+			while (iter.hasNext()) {
+				Block bb = iter.next();
+				if (bb.getType() == Material.BEDROCK || bb.getY() < 1 || bb.getY() > bb.getWorld().getMaxHeight()) {
+					player.playSound(player.getLocation(), Sound.NOTE_BASS, 1.0f, 1.0f);
+					break;
+				}
+				if (bb.getType() == Material.AIR || bb.isLiquid()) {
+					if (n > 3 && n % 2 == 0) {
+						bb.getWorld().playEffect(bb.getLocation(), Effect.SMOKE, 0);
+					}
+				} else {
+					forceSlide(plugin, player, bb);
+					break;
+				}
+				n++;
 			}
+//			b = player.getTargetBlock(transparent, 140);
+//			if (b != null && b.getY() != 0 && b.getType() != Material.AIR) {
+//				forceSlide(plugin, player, b);
+//			} else {
+//				player.playSound(player.getLocation(), Sound.NOTE_BASS, 1.0f, 1.0f);
+//			}
 			break;
 		default:
 			break;

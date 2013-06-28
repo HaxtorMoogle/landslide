@@ -28,6 +28,7 @@ public class PowerCommand extends AbstractCommand {
 		try {
 			int power = Integer.parseInt(args[0]);
 			wand.setPower(power);
+			player.setItemInHand(wand.toItemStack(player.getItemInHand().getAmount()));
 		} catch (NumberFormatException e) {
 			throw new DHUtilsException("Invalid numeric quantity: " + args[0]);
 		}

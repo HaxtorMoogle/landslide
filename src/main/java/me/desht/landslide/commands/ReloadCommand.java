@@ -20,6 +20,7 @@ public class ReloadCommand extends AbstractCommand {
 		LandslidePlugin lPlugin = (LandslidePlugin) plugin;
 		lPlugin.reloadConfig();
 		lPlugin.processConfig();
+		lPlugin.getPerWorldConfig().processConfig();
 		MiscUtil.statusMessage(sender, "The plugin configuration has been reloaded.");
 		return true;
 	}
