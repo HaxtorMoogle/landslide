@@ -16,7 +16,7 @@ drop_slidy_floaters: true
 drop_nonslidy_floaters: false
 worldguard:
   enabled: true
-  use_flag: other-explosion
+  use_flag: enderman-grief
 cliff_stability: 50
 explode_effect_chance: 5
 drop_items: true
