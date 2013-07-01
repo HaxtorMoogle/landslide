@@ -18,23 +18,35 @@ permissions:
       landslide.commands.reload: true
       landslide.commands.getcfg: true
       landslide.commands.setcfg: true
+      landslide.commands.delete: true
       landslide.commands.kaboom: true
       landslide.commands.wand: true
+      landslide.commands.info: true
+      landslide.commands.power: true
       landslide.use.wand: true
   landslide.commands.reload:
-    description: Allow reloading of the plugin configuration
+    description: Allow reloading of the plugin configuration with /landslide reload
     default: op
   landslide.commands.getcfg:
-    description: Allow the plugin configuration to be inspected
+    description: Allow the plugin configuration to be inspected with /landslide getcfg
     default: op
   landslide.commands.setcfg:
-    description: Allow the plugin configuration to be modified
+    description: Allow the plugin configuration to be modified with /landslide setcfg
+    default: op
+  landslide.commands.delete:
+    description: Allow world-specific config settings to be deleted (restoring the default) with /landslide delete
     default: op
   landslide.commands.kaboom:
-    description: Allow big explosions to be created
+    description: Allow explosions to be created with /landslide kaboom
     default: op
   landslide.commands.wand:
-    description: Allow the Slide-O-Tron wand to be obtained
+    description: Allow the Slide-O-Tron wand to be obtained with /landslide wand
+    default: op
+  landslide.commands.power:
+    description: Allow the Slide-O-Tron wand power to be adjusted with /landslide power
+    default: op
+  landslide.commands.info:
+    description: Allow information about current landslide settings to be viewed with /landslide info
     default: op
   landslide.use.wand:
     description: Allow the Slide-O-Tron wand to be used
