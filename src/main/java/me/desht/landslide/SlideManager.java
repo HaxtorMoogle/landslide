@@ -215,7 +215,6 @@ public class SlideManager {
 			return false;
 		}
 		boolean ret = !WGBukkit.getRegionManager(b.getWorld()).getApplicableRegions(b.getLocation()).allows(wgFlag);
-		if (ret) System.out.println(b + " protected by WG");
 		return ret;
 	}
 

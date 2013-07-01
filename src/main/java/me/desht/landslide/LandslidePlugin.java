@@ -203,6 +203,9 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 
 	@Override
 	public void onConfigurationValidate(ConfigurationManager configurationManager, String key, Object oldVal, Object newVal) {
+		if (key.startsWith("worldguard.") && !isWorldGuardEnabled()) {
+			throw new DHUtilsException("WorldGuard plugin is not enabled");
+		}
 		if (newVal != null && (key.contains("slide_chance.") && newVal != null || key.contains("cliff_stability") || key.contains("explode_effect_chance"))) {
 			int pct = (Integer) newVal;
 			DHValidate.isTrue(pct >= 0 && pct <= 100, "Value must be a percentage (0-100 inclusive)");
@@ -218,14 +221,13 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 			DHValidate.notNull(from, "Invalid material: " + s);
 			Material to = Material.matchMaterial((String) newVal);
 			DHValidate.notNull(to, "Invalid material: " + s);
-		} else if (key.equals("worldguard.use_flag") && isWorldGuardEnabled()) {
+		} else if (key.equals("worldguard.use_flag")) {
 			validateWorldGuardFlag((String) newVal);
 		}
 	}
 
 	@Override
 	public void onConfigurationChanged(ConfigurationManager configurationManager, String key, Object oldVal, Object newVal) {
-		System.out.println("config changed: " + key + ": " + oldVal + " -> " + newVal);
 		if (key.equals("max_slides_per_tick")) {
 			slideManager.setMaxSlidesPerTick((Integer) newVal);
 		} else if (key.equals("max_slides_total")) {
@@ -234,10 +236,10 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 			LogUtils.setLogLevel(newVal.toString());
 		} else if (key.equals("coloured_console")) {
 			MiscUtil.setColouredConsole((Boolean) newVal);
-		} else if (key.equals("worldguard.enabled") && isWorldGuardEnabled()) {
+		} else if (key.equals("worldguard.enabled")) {
 			slideManager.setWorldGuardEnabled((Boolean) newVal);
 			slideManager.setWorldGuardFlag(getConfig().getString("worldguard.use_flag"));
-		} else if (key.equals("worldguard.use_flag") && isWorldGuardEnabled()) {
+		} else if (key.equals("worldguard.use_flag")) {
 			slideManager.setWorldGuardFlag((String) newVal);
 		} else {
 			getPerWorldConfig().processKey(getConfig(), key);
