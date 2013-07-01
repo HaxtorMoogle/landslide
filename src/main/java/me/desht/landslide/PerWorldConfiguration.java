@@ -50,7 +50,11 @@ public class PerWorldConfiguration {
 			subKey = parts.length >= 2 ? parts[1] : null;
 		}
 		LogUtils.fine("process key [" + fullKey + "]: world=" + worldName + ", key=" + key + ", val=" + conf.get(fullKey));
-		if (key.equals("enabled")) {
+		if (!conf.contains(fullKey)) {
+			// config key has been deleted; re-read everything and reconstruct the cached config
+			// this is not the most efficient way, but should be pretty safe
+			processConfig();
+		} else if (key.equals("enabled")) {
 			getWorldParams(worldName).setEnabled(conf.getBoolean(fullKey));
 		} else if (key.equals("cliff_stability")) {
 			getWorldParams(worldName).setCliffStability(conf.getInt(fullKey));

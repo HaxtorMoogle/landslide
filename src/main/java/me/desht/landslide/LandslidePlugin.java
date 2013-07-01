@@ -30,7 +30,9 @@ import me.desht.dhutils.LogUtils;
 import me.desht.dhutils.MessagePager;
 import me.desht.dhutils.MiscUtil;
 import me.desht.dhutils.commands.CommandManager;
+import me.desht.landslide.commands.DeleteCfgCommand;
 import me.desht.landslide.commands.GetcfgCommand;
+import me.desht.landslide.commands.InfoCommand;
 import me.desht.landslide.commands.KaboomCommand;
 import me.desht.landslide.commands.PageCommand;
 import me.desht.landslide.commands.PowerCommand;
@@ -80,10 +82,12 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 		cmds.registerCommand(new ReloadCommand());
 		cmds.registerCommand(new GetcfgCommand());
 		cmds.registerCommand(new SetcfgCommand());
+		cmds.registerCommand(new DeleteCfgCommand());
 		cmds.registerCommand(new KaboomCommand());
 		cmds.registerCommand(new PageCommand());
 		cmds.registerCommand(new PowerCommand());
 		cmds.registerCommand(new WandCommand());
+		cmds.registerCommand(new InfoCommand());
 
 		processConfig();
 		perWorldConfig = new PerWorldConfiguration(this);
@@ -199,7 +203,7 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 
 	@Override
 	public void onConfigurationValidate(ConfigurationManager configurationManager, String key, Object oldVal, Object newVal) {
-		if (key.contains("slide_chance.") && newVal != null || key.contains("cliff_stability") || key.contains("explode_effect_chance")) {
+		if (newVal != null && (key.contains("slide_chance.") && newVal != null || key.contains("cliff_stability") || key.contains("explode_effect_chance"))) {
 			int pct = (Integer) newVal;
 			DHValidate.isTrue(pct >= 0 && pct <= 100, "Value must be a percentage (0-100 inclusive)");
 		} else if (key.equals("log_level")) {
@@ -221,6 +225,7 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 
 	@Override
 	public void onConfigurationChanged(ConfigurationManager configurationManager, String key, Object oldVal, Object newVal) {
+		System.out.println("config changed: " + key + ": " + oldVal + " -> " + newVal);
 		if (key.equals("max_slides_per_tick")) {
 			slideManager.setMaxSlidesPerTick((Integer) newVal);
 		} else if (key.equals("max_slides_total")) {
