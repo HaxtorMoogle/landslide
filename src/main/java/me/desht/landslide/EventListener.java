@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import me.desht.dhutils.LogUtils;
+import me.desht.dhutils.MiscUtil;
 
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -209,6 +210,16 @@ public class EventListener implements Listener {
 			return;
 		}
 		event.setCancelled(true);
+		if (!player.hasPermission("landslide.use.wand")) {
+			player.getWorld().createExplosion(player.getEyeLocation().add(player.getLocation().getDirection().normalize()), 0.0f);
+			Vector vel = player.getLocation().getDirection().normalize().multiply(-5.0);
+			vel.setY(1.2);
+			player.setVelocity(vel);
+			player.damage(2);
+			MiscUtil.errorMessage(player, "The Slide-O-Tron\u2122 explodes in your face!");
+			player.setItemInHand(null);
+			return;
+		}
 		int quantity = player.getItemInHand().getAmount();
 		switch (event.getAction()) {
 		case LEFT_CLICK_AIR: case LEFT_CLICK_BLOCK:
