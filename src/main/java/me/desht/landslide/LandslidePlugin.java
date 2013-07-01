@@ -95,6 +95,8 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 		MessagePager.setPageCmd("/landslide page [#|n|p]");
 		MessagePager.setDefaultPageSize(getConfig().getInt("pager.lines", 0));
 
+		SlideOTron.setupRecipe();
+
 		PluginManager pm = this.getServer().getPluginManager();
 		pm.registerEvents(new EventListener(this), this);
 

@@ -10,6 +10,7 @@ import java.util.regex.Pattern;
 
 import me.desht.dhutils.MiscUtil;
 
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Effect;
 import org.bukkit.Material;
@@ -19,6 +20,7 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.ShapedRecipe;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.util.BlockIterator;
 
@@ -82,6 +84,15 @@ public class SlideOTron {
 				this.power = 2;
 			}
 		}
+	}
+
+	public static void setupRecipe() {
+		ShapedRecipe recipe = new ShapedRecipe(new SlideOTron().toItemStack());
+		recipe.shape("ABC");
+		recipe.setIngredient('A', Material.ENDER_PEARL);
+		recipe.setIngredient('B', Material.BLAZE_ROD);
+		recipe.setIngredient('C', Material.TNT);
+		Bukkit.addRecipe(recipe);
 	}
 
 	/**
