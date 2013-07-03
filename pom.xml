@@ -50,9 +50,9 @@
 			<scope>test</scope>
 		</dependency>
 		<dependency>
-			<groupId>org.mcstats</groupId>
+			<groupId>org.mcstats.bukkit</groupId>
 			<artifactId>metrics-lite</artifactId>
-			<version>R6</version>
+			<version>R7</version>
 		</dependency>
 		<dependency>
 			<groupId>com.sk89q</groupId>
