@@ -18,7 +18,9 @@ along with Landslide.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import me.desht.dhutils.LogUtils;
 
@@ -39,9 +41,10 @@ public class SlideManager {
 	private static final int MAX_SLIDE_DELAY = 20;
 
 	private final LandslidePlugin plugin;
+	private final Set<Location> slideTo = new HashSet<Location>();
+	private final List<ScheduledBlockMove>[] slides;
+	private final List<Drop>[] drops;
 
-	private List<ScheduledBlockMove>[] slides;
-	private List<Drop>[] drops;
 	private int pointer;
 	private int totalSlidesScheduled;
 	private int maxSlidesPerTick;
@@ -67,6 +70,8 @@ public class SlideManager {
 	}
 
 	public void tick() {
+		slideTo.clear();
+
 		if (slides[pointer].size() > 0) {
 			LogUtils.fine("pointer = " + pointer + " - " + slides[pointer].size() + " blocks to slide");
 		}
@@ -94,7 +99,7 @@ public class SlideManager {
 		int delay = immediate ? 1 : plugin.getRandom().nextInt(MAX_SLIDE_DELAY);
 
 		if (scheduleOperation(slide, delay)) {
-			LogUtils.fine("scheduled slide: " + block.getLocation() + " -> " + direction + ", " + mat + "/" + data);
+			slideTo.add(block.getRelative(direction).getLocation());
 			return true;
 		} else {
 			return false;
@@ -158,7 +163,8 @@ public class SlideManager {
 		Block above = block.getRelative(BlockFace.UP);
 		List<BlockFace>	possibles = new ArrayList<BlockFace>();
 		for (BlockFace face : LandslidePlugin.horizontalFaces) {
-			if (!below.getRelative(face).getType().isSolid() && !block.getRelative(face).getType().isSolid() && !above.getRelative(face).getType().isSolid()) {
+			if (!below.getRelative(face).getType().isSolid() && !block.getRelative(face).getType().isSolid() &&
+					!above.getRelative(face).getType().isSolid() && !slideTo.contains(block.getRelative(face).getLocation())) {
 				possibles.add(face);
 			}
 		}
@@ -242,7 +248,6 @@ public class SlideManager {
 			}
 
 			Block above = b.getRelative(BlockFace.UP);
-
 			FallingBlock fb;
 			if (above.getType().isSolid()) {
 				if (plugin.getRandom().nextInt(100) < plugin.getPerWorldConfig().getCliffStability(b.getWorld())) {
@@ -282,6 +287,7 @@ public class SlideManager {
 
 		@Override
 		public FallingBlock initiateMove() {
+			loc.getBlock().setType(Material.AIR);
 			FallingBlock fb = loc.getWorld().spawnFallingBlock(loc, plugin.getPerWorldConfig().getTransform(loc.getWorld(), blockType), data);
 			fb.setVelocity(vec);
 			fb.setDropItem(plugin.getPerWorldConfig().getDropItems(loc.getWorld()));

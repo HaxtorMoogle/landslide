@@ -17,12 +17,10 @@ You should have received a copy of the GNU General Public License
 along with Landslide.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import java.util.ArrayList;
-import java.util.List;
-
 import me.desht.dhutils.LogUtils;
 import me.desht.dhutils.MiscUtil;
 
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -31,23 +29,24 @@ import org.bukkit.entity.Creeper;
 import org.bukkit.entity.EnderDragon;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.FallingBlock;
+import org.bukkit.entity.Item;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.TNTPrimed;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPhysicsEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
+import org.bukkit.event.entity.ItemSpawnEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.util.Vector;
 
 /**
- * Note that all listener methods run with EventPriority.HIGH, giving other plugins a chance
+ * Note that all listener methods run with EventPriority.HIGHEST, giving other plugins a chance
  * to cancel the various events first.
  */
 public class EventListener implements Listener {
@@ -58,7 +57,7 @@ public class EventListener implements Listener {
 		this.plugin = plugin;
 	}
 
-	@EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+	@EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
 	public void onBlockPlace(BlockPlaceEvent event) {
 		if (!plugin.getPerWorldConfig().isEnabled(event.getBlock().getWorld())) {
 			return;
@@ -66,7 +65,7 @@ public class EventListener implements Listener {
 		checkForSlide(event.getBlock());
 	}
 
-	@EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+	@EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
 	public void onBlockLanded(EntityChangeBlockEvent event) {
 		if (!(event.getEntity() instanceof FallingBlock)) {
 			return;
@@ -75,12 +74,17 @@ public class EventListener implements Listener {
 			return;
 		}
 
-		Block block = event.getBlock();
+		final Block block = event.getBlock();
 		FallingBlock fb = (FallingBlock) event.getEntity();
+
+		if (block.getType() == Material.SNOW && fb.getMaterial() == Material.SNOW) {
+			handleSnowFormation(block, fb);
+		}
+
 		LogUtils.fine("falling block landed! " + fb.getMaterial() + " -> " + block);
 		if (checkForSlide(block, event.getTo(), event.getData(), true, plugin.getPerWorldConfig().getFallingBlocksBounce(fb.getWorld()))) {
 			// the block continues to slide - don't waste time forming a true block
-			// (checkForSlide() has created a new FallingBlock entity)
+			// (checkForSlide() will create a new FallingBlock entity)
 			event.setCancelled(true);
 		} else {
 			// the block has landed
@@ -89,10 +93,13 @@ public class EventListener implements Listener {
 			}
 		}
 
-		// see if the block we landed on can be dislodged
-		checkForSlide(block.getRelative(BlockFace.DOWN));
+		// See if the block we landed on can be dislodged; but only "heavy" (aka solid) 
+		// falling blocks will dislodge block they land on
+		if (fb.getMaterial().isSolid()) {
+			checkForSlide(block.getRelative(BlockFace.DOWN));
+		}
 
-		// anything standing in the way?
+		// anything living standing in the way?
 		int dmg = plugin.getPerWorldConfig().getFallingBlockDamage(fb.getWorld());
 		if (dmg > 0) {
 			Location loc = block.getLocation();
@@ -107,40 +114,38 @@ public class EventListener implements Listener {
 		}
 	}
 
-	@EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+	@EventHandler(ignoreCancelled = true)
+	public void snowLayerItemSpawning(ItemSpawnEvent event) {
+		Item item = event.getEntity();
+		if (item.getItemStack().getType() == Material.SNOW) {
+			short thickness = item.getItemStack().getDurability();
+			Block b = item.getLocation().getBlock();
+			if (b.getType() == Material.AIR) {
+				// item could spawn in the block above a thick (thickness >= 6) snow layer
+				b = b.getRelative(BlockFace.DOWN);
+			}
+			if (b.getType() == Material.SNOW) {
+				byte newThickness = (byte) (b.getData() + thickness + 1);
+				if (newThickness > 7) {
+					b.setTypeIdAndData(Material.SNOW_BLOCK.getId(), (byte) 0, true);
+					b.getRelative(BlockFace.UP).setTypeIdAndData(Material.SNOW.getId(), (byte)(newThickness - 8), true);
+				} else if (newThickness == 7) {
+					b.setTypeIdAndData(Material.SNOW_BLOCK.getId(), (byte) 0, true);
+				} else {
+					b.setData(newThickness);
+				}
+			}
+			event.setCancelled(true);
+		}
+	}
+
+	@EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
 	public void onBlockPhysics(BlockPhysicsEvent event) {
 		if (!plugin.getPerWorldConfig().isEnabled(event.getBlock().getWorld())) {
 			return;
 		}
 		checkForSlide(event.getBlock());
-	}
-
-	@EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
-	public void onBlockBreak(BlockBreakEvent event) {
-		if (!plugin.getPerWorldConfig().isEnabled(event.getBlock().getWorld())) {
-			return;
-		}
-		Block above = event.getBlock().getRelative(BlockFace.UP);
-		List<Block> l = new ArrayList<Block>();
-		List<BlockFace> f = new ArrayList<BlockFace>();
-		for (BlockFace face : LandslidePlugin.horizontalFaces) {
-			Block b1 = above.getRelative(face);
-			if (plugin.getPerWorldConfig().getSlideChance(b1.getWorld(), b1.getType()) > plugin.getRandom().nextInt(100)) {
-				l.add(b1);
-				f.add(face.getOppositeFace());
-			}
-		}
-		switch (l.size()) {
-		case 0:
-			break;
-		case 1:
-			plugin.getSlideManager().scheduleBlockSlide(l.get(0), f.get(0));
-			break;
-		default:
-			int idx = plugin.getRandom().nextInt(l.size());
-			plugin.getSlideManager().scheduleBlockSlide(l.get(idx), f.get(idx));
-			break;
-		}
+		checkForSlide(event.getBlock().getRelative(BlockFace.UP));
 	}
 
 	@EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
@@ -150,7 +155,7 @@ public class EventListener implements Listener {
 		}
 
 		// we don't drop items; instead any affected blocks have a chance to become a (high-speed) falling block
-		event.setYield(0f);
+		event.setCancelled(true);
 
 		Location centre = event.getLocation();
 
@@ -190,6 +195,7 @@ public class EventListener implements Listener {
 		LogUtils.fine("explosion: cause = " + event.getEntity() + ", " + event.blockList().size() + " blocks affected, radius = " + distMax);
 		for (Block b : event.blockList()) {
 			if (plugin.getRandom().nextInt(100) > yieldChance) {
+				b.setType(Material.AIR);
 				continue;
 			}
 			double xOff = b.getX() - centre.getBlockX();
@@ -255,6 +261,30 @@ public class EventListener implements Listener {
 		}
 		wand.setPower(wand.getPower() - delta);
 		player.setItemInHand(wand.toItemStack(player.getItemInHand().getAmount()));
+	}
+
+	private void handleSnowFormation(final Block block, FallingBlock fb) {
+		final byte newThickness = (byte)(block.getData() + fb.getBlockData() + 1);
+		if (newThickness > 7) {
+			Bukkit.getScheduler().runTask(plugin, new Runnable() {
+				@Override
+				public void run() {
+					block.setTypeIdAndData(Material.SNOW_BLOCK.getId(), (byte) 0, true);
+					block.getRelative(BlockFace.UP).setTypeIdAndData(Material.SNOW.getId(), (byte)(newThickness - 8), true);
+				}
+			});
+		} else {
+			Bukkit.getScheduler().runTask(plugin, new Runnable() {
+				@Override
+				public void run() {
+					if (newThickness == 7) {
+						block.setTypeIdAndData(Material.SNOW_BLOCK.getId(), (byte) 0, true);
+					} else {
+						block.setData(newThickness, true);
+					}
+				}
+			});
+		}
 	}
 
 	private Block findAdjacentSolid(Block b) {

@@ -103,11 +103,24 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 		getServer().getScheduler().runTaskTimer(this, new Runnable() {
 			@Override
 			public void run() {
+				shuffle(allFaces);
 				slideManager.tick();
 			}
+
 		}, 1L, 1L);
 
 		setupMetrics();
+	}
+
+
+	private void shuffle(Object[] a) {
+		int mid = a.length / 2;
+		for (int i = mid; i < a.length; i++) {
+			int lo = getRandom().nextInt(mid);
+			Object buffer = a[lo];
+			a[lo] = a[i];
+			a[i] = buffer;
+		}
 	}
 
 	@Override
@@ -135,12 +148,12 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 	}
 
 	private void setupWorldGuard() {
-	    Plugin plugin = getServer().getPluginManager().getPlugin("WorldGuard");
+		Plugin plugin = getServer().getPluginManager().getPlugin("WorldGuard");
 
-	    if (plugin != null && (plugin instanceof WorldGuardPlugin)) {
-	    	LogUtils.fine("WorldGuard detected");
-		    worldGuardPlugin =  (WorldGuardPlugin) plugin;
-	    }
+		if (plugin != null && (plugin instanceof WorldGuardPlugin)) {
+			LogUtils.fine("WorldGuard detected");
+			worldGuardPlugin =  (WorldGuardPlugin) plugin;
+		}
 	}
 
 	public Random getRandom() {
@@ -198,8 +211,8 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 				} else {
 					throw new DHUtilsException("Flag " + flagName + " is not a WorldGuard state flag");
 				}
-            }
-        }
+			}
+		}
 		throw new DHUtilsException("Unknown WorldGuard flag " + flagName);
 	}
 
