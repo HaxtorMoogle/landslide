@@ -77,8 +77,8 @@ public class EventListener implements Listener {
 		final Block block = event.getBlock();
 		FallingBlock fb = (FallingBlock) event.getEntity();
 
-		if (block.getType() == Material.SNOW && fb.getMaterial() == Material.SNOW) {
-			handleSnowFormation(block, fb);
+		if (block.getType() == Material.SNOW && (fb.getMaterial() == Material.SNOW || fb.getMaterial() == Material.SNOW_BLOCK)) {
+			handleSnowAccumulation(block, fb);
 		}
 
 		LogUtils.fine("falling block landed! " + fb.getMaterial() + " -> " + block);
@@ -115,10 +115,10 @@ public class EventListener implements Listener {
 	}
 
 	@EventHandler(ignoreCancelled = true)
-	public void snowLayerItemSpawning(ItemSpawnEvent event) {
+	public void onSnowItemSpawn(ItemSpawnEvent event) {
 		Item item = event.getEntity();
-		if (item.getItemStack().getType() == Material.SNOW) {
-			short thickness = item.getItemStack().getDurability();
+		if (item.getItemStack().getType() == Material.SNOW || item.getItemStack().getType() == Material.SNOW_BLOCK) {
+			short thickness = item.getItemStack().getType() == Material.SNOW ? item.getItemStack().getDurability() : 7;
 			Block b = item.getLocation().getBlock();
 			if (b.getType() == Material.AIR) {
 				// item could spawn in the block above a thick (thickness >= 6) snow layer
@@ -263,8 +263,16 @@ public class EventListener implements Listener {
 		player.setItemInHand(wand.toItemStack(player.getItemInHand().getAmount()));
 	}
 
-	private void handleSnowFormation(final Block block, FallingBlock fb) {
-		final byte newThickness = (byte)(block.getData() + fb.getBlockData() + 1);
+	/**
+	 * Handle the case where a snow layer or snow block falling block lands (and sucessfully forms a
+	 * new block) on an existing snow layer.
+	 *
+	 * @param block the snow layer block being landed on
+	 * @param fb the falling block, either snow layer or snow block
+	 */
+	private void handleSnowAccumulation(final Block block, FallingBlock fb) {
+		byte fbThickness = fb.getMaterial() == Material.SNOW ? fb.getBlockData() : 8;
+		final byte newThickness = (byte)(block.getData() + fbThickness + 1);
 		if (newThickness > 7) {
 			Bukkit.getScheduler().runTask(plugin, new Runnable() {
 				@Override
