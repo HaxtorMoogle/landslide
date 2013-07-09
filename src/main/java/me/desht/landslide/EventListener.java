@@ -224,10 +224,6 @@ public class EventListener implements Listener {
 	@EventHandler
 	public void onInteract(PlayerInteractEvent event) {
 		Player player = event.getPlayer();
-		if (event.getClickedBlock() != null) {
-			Block b = event.getClickedBlock();
-			player.sendMessage("clicked " + b + " highest = " + player.getWorld().getHighestBlockAt(b.getX(), b.getZ()));
-		}
 		SlideOTron wand = SlideOTron.getWand(player);
 		if (wand == null) {
 			return;
