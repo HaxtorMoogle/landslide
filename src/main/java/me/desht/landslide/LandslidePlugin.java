@@ -40,7 +40,10 @@ import me.desht.landslide.commands.ReloadCommand;
 import me.desht.landslide.commands.SetcfgCommand;
 import me.desht.landslide.commands.WandCommand;
 
+import org.bukkit.Bukkit;
+import org.bukkit.Chunk;
 import org.bukkit.Material;
+import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.command.Command;
@@ -68,6 +71,9 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 	private final Random random = new Random();
 	private WorldGuardPlugin worldGuardPlugin = null;
 	private PerWorldConfiguration perWorldConfig;
+
+	private int ticks = 0;
+	private int snowInterval = 600;
 
 	@Override
 	public void onEnable() {
@@ -103,24 +109,14 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 		getServer().getScheduler().runTaskTimer(this, new Runnable() {
 			@Override
 			public void run() {
-				shuffle(allFaces);
 				slideManager.tick();
+				if (snowInterval > 0 && ++ticks % snowInterval == 0) {
+					handleSnowAccumulation();
+				}
 			}
-
 		}, 1L, 1L);
 
 		setupMetrics();
-	}
-
-
-	private void shuffle(Object[] a) {
-		int mid = a.length / 2;
-		for (int i = mid; i < a.length; i++) {
-			int lo = getRandom().nextInt(mid);
-			Object buffer = a[lo];
-			a[lo] = a[i];
-			a[i] = buffer;
-		}
 	}
 
 	@Override
@@ -155,6 +151,56 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 			worldGuardPlugin =  (WorldGuardPlugin) plugin;
 		}
 	}
+
+	private void handleSnowAccumulation() {
+//		long now = System.nanoTime();
+		boolean snowSmoothing = getConfig().getBoolean("snow.smoothing");
+		for (World w : Bukkit.getWorlds()) {
+			int limit = w.hasStorm() ? getPerWorldConfig().getSnowFormChance(w) : getPerWorldConfig().getSnowMeltChance(w);
+			if (limit <= 0) {
+				return;
+			}
+			limit = (256 * limit) / 100; // 256 blocks per chunk layer
+			int modifier = w.hasStorm() ? 1 : - 1;
+			for (Chunk c : w.getLoadedChunks()) {
+				for (int i = 0; i < limit; i++) {
+					int x = getRandom().nextInt(16);
+					int z = getRandom().nextInt(16);
+					Block b = w.getHighestBlockAt(c.getX() * 16 + x, c.getZ() * 16 + z);
+					if (b.getTemperature() < 0.1) {
+						if (b.getType() == Material.SNOW) {
+							if (snowSmoothing) {
+								for (BlockFace face: horizontalFaces) {
+									Block neighbour = b.getRelative(face);
+									if (neighbour.getType() == Material.SNOW && b.getData() - neighbour.getData() >= 2 * modifier) {
+										b = neighbour;
+										break;
+									} else if (neighbour.getType() == Material.AIR && neighbour.getRelative(BlockFace.DOWN).getType().isSolid()) {
+										b = neighbour.getRelative(BlockFace.DOWN);
+										break;
+									}
+								}
+							}
+							int newData = b.getData() + modifier;
+							if (newData >= 7) {
+								b.setTypeIdAndData(Material.SNOW_BLOCK.getId(), (byte)0, true);
+							} else if (newData >= 0) {
+								b.setData((byte) newData);
+							} else {
+								b.setTypeIdAndData(Material.AIR.getId(), (byte)0, true);
+							}
+						} else if (b.getType() == Material.SNOW_BLOCK && modifier < 0) {
+							b.setTypeIdAndData(Material.SNOW.getId(), (byte)6, true);
+						} else if (b.getType() == Material.AIR && modifier < 0 && b.getRelative(BlockFace.DOWN).getType() == Material.SNOW_BLOCK) {
+							b.getRelative(BlockFace.DOWN).setTypeIdAndData(Material.SNOW.getId(), (byte)6, true);
+						}
+					}
+				}
+			}
+		}
+//		System.out.println("snow processed in " + (System.nanoTime() - now) + " ns");
+	}
+
 
 	public Random getRandom() {
 		return random;
@@ -200,6 +246,8 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 			slideManager.setWorldGuardEnabled(getConfig().getBoolean("worldguard.enabled"));
 			slideManager.setWorldGuardFlag(getConfig().getString("worldguard.use_flag"));
 		}
+
+		snowInterval = getConfig().getInt("snow.check_interval") * 20;
 	}
 
 	public void validateWorldGuardFlag(String flagName) {
@@ -256,6 +304,8 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 			slideManager.setWorldGuardFlag(getConfig().getString("worldguard.use_flag"));
 		} else if (key.equals("worldguard.use_flag")) {
 			slideManager.setWorldGuardFlag((String) newVal);
+		} else if (key.equals("snow.check_interval")) {
+			snowInterval = (Integer) newVal * 20;
 		} else {
 			getPerWorldConfig().processKey(getConfig(), key);
 		}

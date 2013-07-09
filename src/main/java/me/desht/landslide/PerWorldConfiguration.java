@@ -72,6 +72,12 @@ public class PerWorldConfiguration {
 			getWorldParams(worldName).setFallingBlocksBounce(conf.getBoolean(fullKey));
 		} else if (key.equals("horizontal_slides")) {
 			getWorldParams(worldName).setHorizontalSlides(conf.getBoolean(fullKey));
+		} else if (key.equals("snow.form_chance")) {
+			getWorldParams(worldName).setSnowFormChance(conf.getInt(fullKey));
+		} else if (key.equals("snow.melt_chance")) {
+			getWorldParams(worldName).setSnowMeltChance(conf.getInt(fullKey));
+		} else if (key.equals("snow.slide_thickness")) {
+			getWorldParams(worldName).setSnowSlideThickness(conf.getInt(fullKey));
 		}
 	}
 
@@ -118,6 +124,18 @@ public class PerWorldConfiguration {
 		return getWorldParams(world.getName()).getHorizontalSlides();
 	}
 
+	public int getSnowFormChance(World world) {
+		return getWorldParams(world.getName()).getSnowFormChance();
+	}
+
+	public int getSnowMeltChance(World world) {
+		return getWorldParams(world.getName()).getSnowMeltChance();
+	}
+
+	public int getSnowSlideThickness(World world) {
+		return getWorldParams(world.getName()).getSnowSlideThickness();
+	}
+
 	private class WorldParams {
 		private Integer cliffStability = null;
 		private Integer fallingBlockDamage = null;
@@ -128,6 +146,9 @@ public class PerWorldConfiguration {
 		private Boolean horizontalSlides = null;
 		private final Map<Material,Integer> slideChances = new HashMap<Material,Integer>();
 		private BlockTransform transforms = new BlockTransform();
+		private Integer snowMeltChance = null;
+		private Integer snowFormChance = null;
+		private Integer snowSlideThickness = null;
 
 		private WorldParams() {
 		}
@@ -142,6 +163,9 @@ public class PerWorldConfiguration {
 			if (horizontalSlides == null) horizontalSlides = true;
 			if (enabled == null) enabled = false;
 			if (dropItems == null) dropItems = true;
+			if (snowFormChance == null) snowFormChance = 15;
+			if (snowMeltChance == null) snowMeltChance = 15;
+			if (snowSlideThickness == null) snowSlideThickness = 2;
 		}
 
 		public boolean getHorizontalSlides() {
@@ -227,6 +251,30 @@ public class PerWorldConfiguration {
 
 		public void setFallingBlockDamage(int fallingBlockDamage) {
 			this.fallingBlockDamage = fallingBlockDamage;
+		}
+
+		public int getSnowFormChance() {
+			return snowFormChance == null ? defaultWorld.getSnowFormChance() : snowFormChance;
+		}
+
+		public void setSnowFormChance(int snowFormChance) {
+			this.snowFormChance = snowFormChance;
+		}
+
+		public int getSnowMeltChance() {
+			return snowMeltChance == null ? defaultWorld.getSnowMeltChance() : snowMeltChance;
+		}
+
+		public void setSnowMeltChance(int snowMeltChance) {
+			this.snowMeltChance = snowMeltChance;
+		}
+
+		public int getSnowSlideThickness() {
+			return snowSlideThickness == null ? defaultWorld.getSnowSlideThickness() : snowSlideThickness;
+		}
+
+		public void setSnowSlideThickness(int snowSlideThickness) {
+			this.snowSlideThickness = snowSlideThickness;
 		}
 	}
 }

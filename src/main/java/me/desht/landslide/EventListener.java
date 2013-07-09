@@ -23,6 +23,7 @@ import me.desht.dhutils.MiscUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.Sound;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Creeper;
@@ -43,6 +44,7 @@ import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.entity.ItemSpawnEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
 
 /**
@@ -74,9 +76,17 @@ public class EventListener implements Listener {
 			return;
 		}
 
-		final Block block = event.getBlock();
+		Block block = event.getBlock();
 		FallingBlock fb = (FallingBlock) event.getEntity();
 
+		if (block.getType() == Material.AIR && block.getRelative(BlockFace.DOWN).getType() == Material.SNOW) {
+			// trying to land on a thick snow layer - doesn't work well, so just drop an item
+			event.setCancelled(true);
+			if (plugin.getPerWorldConfig().getDropItems(block.getWorld())) {
+				block.getWorld().dropItemNaturally(block.getLocation(), new ItemStack(fb.getMaterial(), 1, fb.getBlockData()));
+			}
+			return;
+		}
 		if (block.getType() == Material.SNOW && (fb.getMaterial() == Material.SNOW || fb.getMaterial() == Material.SNOW_BLOCK)) {
 			handleSnowAccumulation(block, fb);
 		}
@@ -89,12 +99,15 @@ public class EventListener implements Listener {
 		} else {
 			// the block has landed
 			if (plugin.getRandom().nextInt(100) < plugin.getPerWorldConfig().getExplodeEffectChance(fb.getWorld())) {
-				fb.getWorld().createExplosion(fb.getLocation(), 0.0f);
+				if (fb.getMaterial().isSolid()) {
+					fb.getWorld().createExplosion(fb.getLocation(), 0.0f);
+				} else if (fb.getMaterial() == Material.SNOW) {
+					fb.getWorld().playSound(fb.getLocation(), Sound.STEP_SNOW, 1.0f, 0.5f);
+				}
 			}
 		}
 
-		// See if the block we landed on can be dislodged; but only "heavy" (aka solid) 
-		// falling blocks will dislodge block they land on
+		// See if the block we landed on can be dislodged; but only "heavy" (aka solid) falling blocks will dislodge blocks they land on
 		if (fb.getMaterial().isSolid()) {
 			checkForSlide(block.getRelative(BlockFace.DOWN));
 		}
@@ -211,6 +224,10 @@ public class EventListener implements Listener {
 	@EventHandler
 	public void onInteract(PlayerInteractEvent event) {
 		Player player = event.getPlayer();
+		if (event.getClickedBlock() != null) {
+			Block b = event.getClickedBlock();
+			player.sendMessage("clicked " + b + " highest = " + player.getWorld().getHighestBlockAt(b.getX(), b.getZ()));
+		}
 		SlideOTron wand = SlideOTron.getWand(player);
 		if (wand == null) {
 			return;
@@ -271,7 +288,7 @@ public class EventListener implements Listener {
 	 * @param fb the falling block, either snow layer or snow block
 	 */
 	private void handleSnowAccumulation(final Block block, FallingBlock fb) {
-		byte fbThickness = fb.getMaterial() == Material.SNOW ? fb.getBlockData() : 8;
+		byte fbThickness = fb.getMaterial() == Material.SNOW ? fb.getBlockData() : 7;
 		final byte newThickness = (byte)(block.getData() + fbThickness + 1);
 		if (newThickness > 7) {
 			Bukkit.getScheduler().runTask(plugin, new Runnable() {
@@ -326,6 +343,12 @@ public class EventListener implements Listener {
 		} else if (orphan && plugin.getConfig().getBoolean("drop_nonslidy_floaters")) {
 			return plugin.getSlideManager().scheduleBlockSlide(block, BlockFace.DOWN, mat, data, true);
 		} else if (chance > plugin.getRandom().nextInt(100)) {
+			if (block.getType() == Material.SNOW) {
+				// special case; snow can slide off in layers, and the minimum thickness is configurable
+				if (block.getData() < plugin.getPerWorldConfig().getSnowSlideThickness(block.getWorld()) - 1) {
+					return false;
+				}
+			}
 			BlockFace face = plugin.getSlideManager().wouldSlide(block);
 			if (face != null) {
 				return plugin.getSlideManager().scheduleBlockSlide(block, face, mat, data, immediate);
