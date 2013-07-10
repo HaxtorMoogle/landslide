@@ -17,7 +17,7 @@ public class DeleteCfgCommand extends AbstractCommand {
 	public DeleteCfgCommand() {
 		super("landslide delete", 1, 1);
 		setPermissionNode("landslide.commands.delete");
-		setUsage("/landslide delete <config-key>");
+		setUsage("/<command> delete <config-key>");
 	}
 
 	private static final Pattern worldPat = Pattern.compile("^worlds\\.(.+?)\\.(.+)");

@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import me.desht.dhutils.DHValidate;
+import me.desht.dhutils.MessagePager;
 import me.desht.dhutils.MiscUtil;
 import me.desht.dhutils.commands.AbstractCommand;
 import me.desht.landslide.LandslidePlugin;
@@ -15,7 +16,6 @@ import org.bukkit.World;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.Configuration;
 import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 
@@ -24,7 +24,7 @@ public class InfoCommand extends AbstractCommand {
 	public InfoCommand() {
 		super("landslide info", 0, 1);
 		setPermissionNode("landslide.commands.info");
-		setUsage("/landslide info [<world-name>]");
+		setUsage("/<command> info [<world-name>]");
 	}
 
 	private static final String BULLET = ChatColor.LIGHT_PURPLE + "\u2022 " + ChatColor.RESET;
@@ -40,32 +40,42 @@ public class InfoCommand extends AbstractCommand {
 			DHValidate.notNull(w, "Unknown world: " + args[0]);
 		}
 
+		MessagePager pager = MessagePager.getPager(sender).clear().setParseColours(true);
+
 		LandslidePlugin lPlugin = (LandslidePlugin) plugin;
 		PerWorldConfiguration pwc = lPlugin.getPerWorldConfig();
-		MiscUtil.statusMessage(sender, "Landslide information for world " + ChatColor.YELLOW + w.getName() + ":");
-		MiscUtil.statusMessage(sender, BULLET + "Landslides are " + (pwc.isEnabled(w) ? "enabled" : "disabled"));
-		MiscUtil.statusMessage(sender, BULLET + "Blocks may " + (pwc.getHorizontalSlides(w) ? "slide horizontally off other blocks" : "only drop vertically"));
-		MiscUtil.statusMessage(sender, BULLET + "Cliff stability is " + pwc.getCliffStability(w) + "%");
-		MiscUtil.statusMessage(sender, BULLET + "Falling blocks will " + (pwc.getDropItems(w) ? "drop an item" : "be destroyed") + " if they can't be placed");
-		MiscUtil.statusMessage(sender, BULLET + "Falling blocks have a " + pwc.getExplodeEffectChance(w) + "% chance to play an explosion effect on landing");
-		MiscUtil.statusMessage(sender, BULLET + "Falling blocks will " + (pwc.getFallingBlocksBounce(w) ? "bounce down slopes" : "always stop where they land"));
-		MiscUtil.statusMessage(sender, BULLET + "Falling blocks will do " + pwc.getFallingBlockDamage(w) + " damage to entities in the way");
+		pager.add("Landslide information for world " + ChatColor.YELLOW + w.getName() + ":");
+		pager.add(BULLET + "Landslides are " + (pwc.isEnabled(w) ? "enabled" : "disabled"));
+		pager.add(BULLET + "Blocks may " + (pwc.getHorizontalSlides(w) ? "slide horizontally off other blocks" : "only drop vertically"));
+		pager.add(BULLET + "Cliff stability is " + pwc.getCliffStability(w) + "%");
+		pager.add(BULLET + "Falling blocks will " + (pwc.getDropItems(w) ? "drop an item" : "be destroyed") + " if they can't be placed");
+		pager.add(BULLET + "Falling blocks have a " + pwc.getExplodeEffectChance(w) + "% chance to play an explosion effect on landing");
+		pager.add(BULLET + "Falling blocks will " + (pwc.getFallingBlocksBounce(w) ? "bounce down slopes" : "always stop where they land"));
+		pager.add(BULLET + "Falling blocks will do " + pwc.getFallingBlockDamage(w) + " damage to entities in the way");
+		pager.add(BULLET + "Snow must be " + pwc.getSnowSlideThickness(w) + " layers thick before it will slide");
+		pager.add(BULLET + "Snow accumulation/melting is checked every " + plugin.getConfig().getInt("snow.check_interval") + "s");
+		pager.add(BULLET + "Snow has a " + pwc.getSnowFormChance(w) + "% chance to accumulate when snowing");
+		pager.add(BULLET + "Snow has a " + pwc.getSnowMeltChance(w) + "% chance to evaporate when sunny");
+		pager.add(BULLET + "Snow can " + (!plugin.getConfig().getBoolean("snow.melt_away") ? "not " : "") + "melt away completely");
 
 		Map<String,Integer> slideChances = getSlideChances(plugin.getConfig(), w.getName());
 		if (!slideChances.isEmpty()) {
-			MiscUtil.statusMessage(sender, BULLET + "Block slide chances:");
+			pager.add(BULLET + "Block slide chances:");
 			for (String mat : MiscUtil.asSortedList(slideChances.keySet())) {
-				MiscUtil.statusMessage(sender, "  " + BULLET + mat.toUpperCase() + ": " + slideChances.get(mat) + "%");
+				pager.add("  " + BULLET + mat.toUpperCase() + ": " + slideChances.get(mat) + "%");
 			}
 		}
 
 		Map<String,String> transforms = getTransforms(plugin.getConfig(), w.getName());
 		if (!transforms.isEmpty()) {
-			MiscUtil.statusMessage(sender, BULLET + "Material transformations when blocks slide:");
+			pager.add(BULLET + "Material transformations when blocks slide:");
 			for (String mat : MiscUtil.asSortedList(transforms.keySet())) {
-				MiscUtil.statusMessage(sender, "  " + BULLET + mat.toUpperCase() + " => " + transforms.get(mat));
+				pager.add("  " + BULLET + mat.toUpperCase() + " => " + transforms.get(mat));
 			}
 		}
+
+		pager.showPage();
+
 		return true;
 	}
 

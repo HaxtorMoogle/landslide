@@ -11,7 +11,7 @@ public class PageCommand extends AbstractCommand {
 
 	public PageCommand() {
 		super("landslide page", 0, 1);
-		setUsage("/landslide page [n|p|#]");
+		setUsage("/<command> page [n|p|#]");
 	}
 
 	@Override

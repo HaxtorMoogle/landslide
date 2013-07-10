@@ -153,8 +153,9 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 	}
 
 	private void handleSnowAccumulation() {
-//		long now = System.nanoTime();
+		//		long now = System.nanoTime();
 		boolean snowSmoothing = getConfig().getBoolean("snow.smoothing");
+		boolean meltAway = getConfig().getBoolean("snow.melt_away");
 		for (World w : Bukkit.getWorlds()) {
 			int limit = w.hasStorm() ? getPerWorldConfig().getSnowFormChance(w) : getPerWorldConfig().getSnowMeltChance(w);
 			if (limit <= 0) {
@@ -166,39 +167,42 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 				for (int i = 0; i < limit; i++) {
 					int x = getRandom().nextInt(16);
 					int z = getRandom().nextInt(16);
-					Block b = w.getHighestBlockAt(c.getX() * 16 + x, c.getZ() * 16 + z);
-					if (b.getTemperature() < 0.1) {
-						if (b.getType() == Material.SNOW) {
+					Block block = w.getHighestBlockAt(c.getX() * 16 + x, c.getZ() * 16 + z);
+					Block below = block.getRelative(BlockFace.DOWN);
+					if (block.getTemperature() < 0.1 && (modifier > 0 || block.getLightLevel() > 12)) {
+						if (block.getType() == Material.SNOW) {
 							if (snowSmoothing) {
 								for (BlockFace face: horizontalFaces) {
-									Block neighbour = b.getRelative(face);
-									if (neighbour.getType() == Material.SNOW && b.getData() - neighbour.getData() >= 2 * modifier) {
-										b = neighbour;
-										break;
-									} else if (neighbour.getType() == Material.AIR && neighbour.getRelative(BlockFace.DOWN).getType().isSolid()) {
-										b = neighbour.getRelative(BlockFace.DOWN);
-										break;
+									Block neighbour = block.getRelative(face);
+									if (neighbour.getType() == Material.SNOW || neighbour.getType() == Material.AIR && BlockInfo.isSolid(neighbour.getRelative(BlockFace.DOWN))) {
+										if (modifier > 0 && block.getData() - neighbour.getData() >= 2 * modifier) {
+											block = neighbour;
+											break;
+										} else if (modifier < 0 && block.getData() - neighbour.getData() <= 2 * modifier) {
+											block = neighbour;
+											break;
+										}
 									}
 								}
 							}
-							int newData = b.getData() + modifier;
+							int newData = block.getData() + modifier;
 							if (newData >= 7) {
-								b.setTypeIdAndData(Material.SNOW_BLOCK.getId(), (byte)0, true);
+								block.setTypeIdAndData(Material.SNOW_BLOCK.getId(), (byte)0, true);
 							} else if (newData >= 0) {
-								b.setData((byte) newData);
-							} else {
-								b.setTypeIdAndData(Material.AIR.getId(), (byte)0, true);
+								block.setData((byte) newData);
+							} else if (meltAway || below.getType() == Material.SNOW_BLOCK) {
+								block.setTypeIdAndData(Material.AIR.getId(), (byte)0, true);
 							}
-						} else if (b.getType() == Material.SNOW_BLOCK && modifier < 0) {
-							b.setTypeIdAndData(Material.SNOW.getId(), (byte)6, true);
-						} else if (b.getType() == Material.AIR && modifier < 0 && b.getRelative(BlockFace.DOWN).getType() == Material.SNOW_BLOCK) {
-							b.getRelative(BlockFace.DOWN).setTypeIdAndData(Material.SNOW.getId(), (byte)6, true);
+						} else if (block.getType() == Material.SNOW_BLOCK && modifier < 0) {
+							block.setTypeIdAndData(Material.SNOW.getId(), (byte)6, true);
+						} else if (block.getType() == Material.AIR && modifier < 0 && below.getType() == Material.SNOW_BLOCK) {
+							below.setTypeIdAndData(Material.SNOW.getId(), (byte)6, true);
 						}
 					}
 				}
 			}
 		}
-//		System.out.println("snow processed in " + (System.nanoTime() - now) + " ns");
+		//		System.out.println("snow processed in " + (System.nanoTime() - now) + " ns");
 	}
 
 
@@ -313,7 +317,7 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 
 	public boolean isOrphan(Block block) {
 		for (BlockFace f : LandslidePlugin.allFaces) {
-			if (block.getRelative(f).getType().isSolid()) {
+			if (BlockInfo.isSolid(block.getRelative(f))) {
 				return false;
 			}
 		}

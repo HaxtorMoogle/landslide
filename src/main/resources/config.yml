@@ -25,8 +25,8 @@ falling_blocks_bounce: true
 enabled: false
 horizontal_slides: true
 slide_chance:
-  dirt: 85
-  grass: 60
+  dirt: 50
+  grass: 25
   sand: 100
   gravel: 100
 transform:
@@ -35,6 +35,6 @@ snow:
   check_interval: 30
   form_chance: 5
   melt_chance: 5
+  melt_away: false
   slide_thickness: 2
   smoothing: false
-

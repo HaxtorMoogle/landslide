@@ -13,7 +13,7 @@ public class KaboomCommand extends AbstractCommand {
 	public KaboomCommand() {
 		super("landslide kaboom", 0, 1);
 		setPermissionNode("landslide.commands.kaboom");
-		setUsage("/landslide kaboom [<power-level>]");
+		setUsage("/<command> kaboom [<power-level>]");
 	}
 
 	@Override

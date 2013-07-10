@@ -154,7 +154,7 @@ public class SlideManager {
 
 	public BlockFace wouldSlide(Block block) {
 		Block below = block.getRelative(BlockFace.DOWN);
-		if (!below.getType().isSolid()) {
+		if (!BlockInfo.isSolid(below)) {
 			return BlockFace.DOWN;
 		}
 		if (!plugin.getPerWorldConfig().getHorizontalSlides(block.getWorld())) {
@@ -164,10 +164,10 @@ public class SlideManager {
 		List<BlockFace>	possibles = new ArrayList<BlockFace>();
 		for (BlockFace face : LandslidePlugin.horizontalFaces) {
 			Block sideBlock = block.getRelative(face);
-			if (!below.getRelative(face).getType().isSolid() &&
+			if (!BlockInfo.isSolid(below.getRelative(face)) &&
 					!isThickSnowLayer(below.getRelative(face)) &&
-					!sideBlock.getType().isSolid() && 
-					!above.getRelative(face).getType().isSolid() &&
+					!BlockInfo.isSolid(sideBlock) && 
+					!BlockInfo.isSolid(above.getRelative(face)) &&
 					!slideTo.contains(sideBlock.getLocation())) {
 				possibles.add(face);
 			}
@@ -182,6 +182,7 @@ public class SlideManager {
 	private boolean isThickSnowLayer(Block b) {
 		return b.getType() == Material.SNOW && b.getData() > 4;
 	}
+
 	public void setWorldGuardEnabled(Boolean enabled) {
 		this.worldGuardEnabled = enabled;
 	}
@@ -249,7 +250,7 @@ public class SlideManager {
 		@Override
 		public FallingBlock initiateMove() {
 			Block b = loc.getBlock();
-			if (wouldSlide(b) == null || ((b.getType() != blockMaterial || b.getData() != data) && !immediate)) {
+			if (wouldSlide(b) == null || ((b.getType() != blockMaterial /*|| b.getData() != data */) && !immediate)) {
 				// sanity check; ensure the block can still slide now
 				return null;
 			}
@@ -258,9 +259,9 @@ public class SlideManager {
 			FallingBlock fb;
 			int blockType = 0;
 			byte blockData = 0;
-			byte fbData = data;
+			byte fbData = b.getData();
 
-			if (b.getType() == Material.SNOW) {
+			if (b.getType() == Material.SNOW && BlockInfo.isSolid(b.getRelative(BlockFace.DOWN))) {
 				// special case; snow can slide off in layers
 				fbData = 0; // single layer of snow slides
 				if (b.getData() > 0) {
@@ -276,7 +277,7 @@ public class SlideManager {
 				return null;
 			}
 
-			if (above.getType().isSolid()) {
+			if (BlockInfo.isSolid(above)) {
 				if (plugin.getRandom().nextInt(100) < plugin.getPerWorldConfig().getCliffStability(b.getWorld())) {
 					return null;
 				}

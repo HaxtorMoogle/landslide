@@ -11,7 +11,7 @@ public class ReloadCommand extends AbstractCommand {
 
 	public ReloadCommand() {
 		super("landslide reload");
-		setUsage("/landslide reload");
+		setUsage("/<command> reload");
 		setPermissionNode("landslide.commands.reload");
 	}
 

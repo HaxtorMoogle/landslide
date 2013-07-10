@@ -14,7 +14,7 @@ public class PowerCommand extends AbstractCommand {
 	public PowerCommand() {
 		super("landslide power", 1, 1);
 		setPermissionNode("landslide.commands.power");
-		setUsage("/landslide power <power-level>");
+		setUsage("/<command> power <power-level>");
 	}
 
 	@Override
