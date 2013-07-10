@@ -32,9 +32,9 @@ slide_chance:
 transform:
   grass: dirt
 snow:
-  check_interval: 60
-  form_chance: 2
-  melt_chance: 2
+  check_interval: 0
+  form_chance: 0
+  melt_chance: 0
   melt_away: false
   slide_thickness: 2
   smoothing: false
