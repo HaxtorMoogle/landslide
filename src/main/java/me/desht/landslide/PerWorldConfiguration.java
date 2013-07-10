@@ -1,5 +1,6 @@
 package me.desht.landslide;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -8,6 +9,8 @@ import me.desht.dhutils.LogUtils;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.configuration.Configuration;
+
+import com.google.common.base.Joiner;
 
 public class PerWorldConfiguration {
 	private static final String WORLD_DEFAULTS = "*DEFAULT";
@@ -72,12 +75,14 @@ public class PerWorldConfiguration {
 			getWorldParams(worldName).setFallingBlocksBounce(conf.getBoolean(fullKey));
 		} else if (key.equals("horizontal_slides")) {
 			getWorldParams(worldName).setHorizontalSlides(conf.getBoolean(fullKey));
-		} else if (key.equals("snow.form_chance")) {
-			getWorldParams(worldName).setSnowFormChance(conf.getInt(fullKey));
-		} else if (key.equals("snow.melt_chance")) {
-			getWorldParams(worldName).setSnowMeltChance(conf.getInt(fullKey));
-		} else if (key.equals("snow.slide_thickness")) {
-			getWorldParams(worldName).setSnowSlideThickness(conf.getInt(fullKey));
+		} else if (key.equals("snow")) {
+			if (subKey.equals("form_chance")) {
+				getWorldParams(worldName).setSnowFormChance(conf.getInt(fullKey));
+			} else if (subKey.equals("melt_chance")) {
+				getWorldParams(worldName).setSnowMeltChance(conf.getInt(fullKey));
+			} else if (subKey.equals("slide_thickness")) {
+				getWorldParams(worldName).setSnowSlideThickness(conf.getInt(fullKey));
+			}
 		}
 	}
 
