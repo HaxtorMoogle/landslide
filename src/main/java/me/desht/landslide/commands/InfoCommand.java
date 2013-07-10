@@ -44,25 +44,25 @@ public class InfoCommand extends AbstractCommand {
 
 		LandslidePlugin lPlugin = (LandslidePlugin) plugin;
 		PerWorldConfiguration pwc = lPlugin.getPerWorldConfig();
-		pager.add("Landslide information for world " + ChatColor.YELLOW + w.getName() + ":");
-		pager.add(BULLET + "Landslides are " + (pwc.isEnabled(w) ? "enabled" : "disabled"));
-		pager.add(BULLET + "Blocks may " + (pwc.getHorizontalSlides(w) ? "slide horizontally off other blocks" : "only drop vertically"));
-		pager.add(BULLET + "Cliff stability is " + pwc.getCliffStability(w) + "%");
-		pager.add(BULLET + "Falling blocks will " + (pwc.getDropItems(w) ? "drop an item" : "be destroyed") + " if they can't be placed");
-		pager.add(BULLET + "Falling blocks have a " + pwc.getExplodeEffectChance(w) + "% chance to play an explosion effect on landing");
-		pager.add(BULLET + "Falling blocks will " + (pwc.getFallingBlocksBounce(w) ? "bounce down slopes" : "always stop where they land"));
-		pager.add(BULLET + "Falling blocks will do " + pwc.getFallingBlockDamage(w) + " damage to entities in the way");
-		pager.add(BULLET + "Snow must be " + pwc.getSnowSlideThickness(w) + " layers thick before it will slide");
+		pager.add("Landslide information for world " + ChatColor.GOLD + ChatColor.BOLD + w.getName() + ":");
+		pager.add(BULLET + "Landslides are " + col((pwc.isEnabled(w) ? "enabled" : "disabled")));
+		pager.add(BULLET + "Blocks may " + col((pwc.getHorizontalSlides(w) ? "slide horizontally off other blocks" : "only drop vertically")));
+		pager.add(BULLET + "Cliff stability is " + col(pwc.getCliffStability(w) + "%"));
+		pager.add(BULLET + "Falling blocks will " + col((pwc.getDropItems(w) ? "drop an item" : "be destroyed")) + " if they can't be placed");
+		pager.add(BULLET + "Falling blocks have a " + col(pwc.getExplodeEffectChance(w) + "%") + " chance to play an explosion effect on landing");
+		pager.add(BULLET + "Falling blocks will " + col((pwc.getFallingBlocksBounce(w) ? "bounce down slopes" : "always stop where they land")));
+		pager.add(BULLET + "Falling blocks will do " + col(pwc.getFallingBlockDamage(w)) + " damage to entities in the way");
+		pager.add(BULLET + "Snow must be " + col(pwc.getSnowSlideThickness(w)) + " layers thick before it will slide");
 		pager.add(BULLET + "Snow accumulation/melting is checked every " + plugin.getConfig().getInt("snow.check_interval") + "s");
-		pager.add(BULLET + "Snow has a " + pwc.getSnowFormChance(w) + "% chance to accumulate when snowing");
-		pager.add(BULLET + "Snow has a " + pwc.getSnowMeltChance(w) + "% chance to evaporate when sunny");
-		pager.add(BULLET + "Snow can " + (!plugin.getConfig().getBoolean("snow.melt_away") ? "not " : "") + "melt away completely");
+		pager.add(BULLET + "Snow has a " + col(pwc.getSnowFormChance(w) + "%") + " chance to accumulate when snowing");
+		pager.add(BULLET + "Snow has a " + col(pwc.getSnowMeltChance(w) + "%") + " chance to evaporate when sunny");
+		pager.add(BULLET + "Snow can " + col((!plugin.getConfig().getBoolean("snow.melt_away") ? "not " : "") + "melt away completely"));
 
 		Map<String,Integer> slideChances = getSlideChances(plugin.getConfig(), w.getName());
 		if (!slideChances.isEmpty()) {
 			pager.add(BULLET + "Block slide chances:");
 			for (String mat : MiscUtil.asSortedList(slideChances.keySet())) {
-				pager.add("  " + BULLET + mat.toUpperCase() + ": " + slideChances.get(mat) + "%");
+				pager.add("  " + BULLET + mat.toUpperCase() + ": " + col(slideChances.get(mat) + "%"));
 			}
 		}
 
@@ -70,13 +70,21 @@ public class InfoCommand extends AbstractCommand {
 		if (!transforms.isEmpty()) {
 			pager.add(BULLET + "Material transformations when blocks slide:");
 			for (String mat : MiscUtil.asSortedList(transforms.keySet())) {
-				pager.add("  " + BULLET + mat.toUpperCase() + " => " + transforms.get(mat));
+				pager.add("  " + BULLET + mat.toUpperCase() + " => " + col(transforms.get(mat)));
 			}
 		}
 
 		pager.showPage();
 
 		return true;
+	}
+
+	private String col(String s) {
+		return ChatColor.YELLOW + s + ChatColor.RESET;
+	}
+
+	private String col(int i) {
+		return ChatColor.YELLOW + Integer.toString(i) + ChatColor.RESET;
 	}
 
 	private Map<String, Integer> getSlideChances(Configuration config, String worldName) {
