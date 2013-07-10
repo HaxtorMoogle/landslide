@@ -102,7 +102,7 @@ public class EventListener implements Listener {
 		}
 
 		LogUtils.fine("falling block landed! " + fb.getMaterial() + " -> " + block);
-		if (checkForSlide(block, event.getTo(), event.getData(), true, plugin.getPerWorldConfig().getFallingBlocksBounce(fb.getWorld()))) {
+		if (checkForSlide(block, event.getTo(), true, plugin.getPerWorldConfig().getFallingBlocksBounce(fb.getWorld()))) {
 			// the block continues to slide - don't waste time forming a true block
 			// (checkForSlide() will create a new FallingBlock entity)
 			event.setCancelled(true);
@@ -343,13 +343,13 @@ public class EventListener implements Listener {
 		return false;
 	}
 
-	private boolean checkForSlide(Block block, Material mat, byte data, boolean immediate, boolean always) {
+	private boolean checkForSlide(Block block, Material mat, boolean immediate, boolean always) {
 		int chance = always ? 100 : plugin.getPerWorldConfig().getSlideChance(block.getWorld(), mat);
 		boolean orphan = plugin.isOrphan(block);
 		if (chance > 0 && orphan && plugin.getConfig().getBoolean("drop_slidy_floaters")) {
-			return plugin.getSlideManager().scheduleBlockSlide(block, BlockFace.DOWN, mat, data, true);
+			return plugin.getSlideManager().scheduleBlockSlide(block, BlockFace.DOWN, mat, true);
 		} else if (orphan && plugin.getConfig().getBoolean("drop_nonslidy_floaters")) {
-			return plugin.getSlideManager().scheduleBlockSlide(block, BlockFace.DOWN, mat, data, true);
+			return plugin.getSlideManager().scheduleBlockSlide(block, BlockFace.DOWN, mat, true);
 		} else if (chance > plugin.getRandom().nextInt(100)) {
 			if (block.getType() == Material.SNOW) {
 				// special case; snow can slide off in layers, and the minimum thickness is configurable
@@ -359,14 +359,14 @@ public class EventListener implements Listener {
 			}
 			BlockFace face = plugin.getSlideManager().wouldSlide(block);
 			if (face != null) {
-				return plugin.getSlideManager().scheduleBlockSlide(block, face, mat, data, immediate);
+				return plugin.getSlideManager().scheduleBlockSlide(block, face, mat, immediate);
 			}
 		}
 		return false;
 	}
 
 	private boolean checkForSlide(Block block) {
-		return checkForSlide(block, block.getType(), block.getData(), false, false);
+		return checkForSlide(block, block.getType(), false, false);
 	}
 
 }
