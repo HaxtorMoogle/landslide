@@ -53,7 +53,8 @@ public class InfoCommand extends AbstractCommand {
 		pager.add(BULLET + "Falling blocks will " + col((pwc.getFallingBlocksBounce(w) ? "bounce down slopes" : "always stop where they land")));
 		pager.add(BULLET + "Falling blocks will do " + col(pwc.getFallingBlockDamage(w)) + " damage to entities in the way");
 		pager.add(BULLET + "Snow must be " + col(pwc.getSnowSlideThickness(w)) + " layers thick before it will slide");
-		pager.add(BULLET + "Snow accumulation/melting is checked every " + plugin.getConfig().getInt("snow.check_interval") + "s");
+		int check = plugin.getConfig().getInt("snow.check_interval");
+		pager.add(BULLET + "Snow accumulation/melting is " + col(check > 0 ? "checked every " + check + "s" : "not checked"));
 		pager.add(BULLET + "Snow has a " + col(pwc.getSnowFormChance(w) + "%") + " chance to accumulate when snowing");
 		pager.add(BULLET + "Snow has a " + col(pwc.getSnowMeltChance(w) + "%") + " chance to evaporate when sunny");
 		pager.add(BULLET + "Snow can " + col((!plugin.getConfig().getBoolean("snow.melt_away") ? "not " : "") + "melt away completely"));
