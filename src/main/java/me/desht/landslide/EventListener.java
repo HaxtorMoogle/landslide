@@ -99,10 +99,11 @@ public class EventListener implements Listener {
 		} else {
 			// the block has landed
 			if (plugin.getRandom().nextInt(100) < plugin.getPerWorldConfig().getExplodeEffectChance(fb.getWorld())) {
-				if (fb.getMaterial().isSolid()) {
-					fb.getWorld().createExplosion(fb.getLocation(), 0.0f);
-				} else if (fb.getMaterial() == Material.SNOW) {
+				if (fb.getMaterial() == Material.SNOW || fb.getMaterial() == Material.SNOW_BLOCK) {
+					// snow falling is nice and quiet!
 					fb.getWorld().playSound(fb.getLocation(), Sound.STEP_SNOW, 1.0f, 0.5f);
+				} else if (fb.getMaterial().isSolid()) {
+					fb.getWorld().createExplosion(fb.getLocation(), 0.0f);
 				}
 			}
 		}
@@ -114,7 +115,7 @@ public class EventListener implements Listener {
 
 		// anything living standing in the way?
 		int dmg = plugin.getPerWorldConfig().getFallingBlockDamage(fb.getWorld());
-		if (dmg > 0) {
+		if (dmg > 0 && fb.getMaterial().isSolid()) {
 			Location loc = block.getLocation();
 			for (Entity e : loc.getChunk().getEntities()) {
 				if (e instanceof LivingEntity) {
