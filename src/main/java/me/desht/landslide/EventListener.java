@@ -219,6 +219,10 @@ public class EventListener implements Listener {
 
 		LogUtils.fine("explosion: cause = " + event.getEntity() + ", " + event.blockList().size() + " blocks affected, radius = " + distMax);
 		for (Block b : event.blockList()) {
+			if (!b.getType().isSolid()) {
+				// maybe some other plugin has already changed this block (e.g. CreeperHeal?)
+				continue;
+			}
 			if (plugin.getRandom().nextInt(100) > yieldChance) {
 				b.setType(Material.AIR);
 				continue;
