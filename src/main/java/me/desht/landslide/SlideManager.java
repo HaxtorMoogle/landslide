@@ -87,7 +87,7 @@ public class SlideManager {
 		pointer = (pointer + 1) % RING_BUFFER_SIZE;
 	}
 
-	public boolean scheduleBlockSlide(Block block, BlockFace direction, Material mat, boolean immediate) {
+	public boolean scheduleBlockSlide(Block block, BlockFace direction, Material mat, byte data, boolean immediate) {
 		if (totalSlidesScheduled >= getMaxSlidesTotal() || getMaxSlidesPerTick() <= 0) {
 			return false;
 		}
@@ -95,7 +95,7 @@ public class SlideManager {
 			return false;
 		}
 
-		Slide slide = new Slide(block.getLocation(), direction, mat, immediate);
+		Slide slide = new Slide(block.getLocation(), direction, mat, data, immediate);
 		int delay = immediate ? 1 : plugin.getRandom().nextInt(MAX_SLIDE_DELAY);
 
 		if (scheduleOperation(slide, delay)) {
@@ -107,7 +107,7 @@ public class SlideManager {
 	}
 
 	public boolean scheduleBlockSlide(Block block, BlockFace direction) {
-		return scheduleBlockSlide(block, direction, block.getType(), false);
+		return scheduleBlockSlide(block, direction, block.getType(), block.getData(), false);
 	}
 
 	public boolean scheduleBlockFling(Block block, Vector vec, Vector offset) {
@@ -235,13 +235,15 @@ public class SlideManager {
 	private class Slide implements ScheduledBlockMove {
 		private final Location loc;
 		private final Material blockMaterial;
+		private final byte data;
 		private final BlockFace direction;
 		private final boolean immediate;
 
-		private Slide(Location loc, BlockFace direction, Material blockType, boolean immediate) {
+		private Slide(Location loc, BlockFace direction, Material blockType, byte data, boolean immediate) {
 			this.direction = direction;
 			this.loc = loc;
 			this.blockMaterial = blockType;
+			this.data = data;
 			this.immediate = immediate;
 		}
 
@@ -257,7 +259,7 @@ public class SlideManager {
 			FallingBlock fb;
 			int blockType = 0;
 			byte blockData = 0;
-			byte fbData = b.getData();
+			byte fbData = data;
 
 			if (b.getType() == Material.SNOW && BlockInfo.isSolid(b.getRelative(BlockFace.DOWN))) {
 				// special case; snow can slide off in layers
