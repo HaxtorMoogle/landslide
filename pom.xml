@@ -10,6 +10,20 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	</properties>
+        <scm>
+          <connection>scm:git:git://github.com/desht/landslide.git</connection>
+          <developerConnection>scm:git:git@github.com:desht/landslide.git</developerConnection>
+          <url>https://github.com/desht/landslide</url>
+        </scm>
+
+        <licenses>
+          <license>
+            <name>GNU GENERAL PUBLIC LICENSE - Version 2, June 1991</name>
+            <url>http://www.gnu.org/licenses/gpl-2.0.txt</url>
+            <distribution>repo</distribution>
+          </license>
+        </licenses>
+
 	<repositories>
 		<repository>
 			<id>bukkit-repo</id>
@@ -19,13 +33,17 @@
 			<id>Plugin Metrics</id>
 			<url>http://repo.mcstats.org/content/repositories/public</url>
 		</repository>
-                <repository>
+                <!-- <repository>
 			<id>Genesis-MC</id>
 			<url>http://jenkins.genesis-mc.com/plugin/repository/everything/</url>
-		</repository>
+		</repository> -->
 		<repository>
                         <id>sk89q-maven</id>
                         <url>http://maven.sk89q.com/repo</url>
+                </repository>
+                <repository>
+                    <id>DH Dropbox</id>
+                    <url>http://dl.dropboxusercontent.com/u/12467600/maven-repo</url>
                 </repository>
 
 	</repositories>
