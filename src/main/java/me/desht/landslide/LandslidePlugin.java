@@ -54,6 +54,7 @@ import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.mcstats.MetricsLite;
 
+import com.sk89q.worldguard.bukkit.WGBukkit;
 import com.sk89q.worldguard.bukkit.WorldGuardPlugin;
 import com.sk89q.worldguard.protection.flags.DefaultFlag;
 import com.sk89q.worldguard.protection.flags.Flag;
@@ -156,6 +157,8 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 		//		long now = System.nanoTime();
 		boolean snowSmoothing = getConfig().getBoolean("snow.smoothing");
 		boolean meltAway = getConfig().getBoolean("snow.melt_away");
+		boolean wgChecks = isWorldGuardAvailable() && getSlideManager().isWorldGuardEnabled();
+
 		for (World w : Bukkit.getWorlds()) {
 			int limit = w.hasStorm() ? getPerWorldConfig().getSnowFormChance(w) : getPerWorldConfig().getSnowMeltChance(w);
 			if (limit <= 0) {
@@ -170,15 +173,21 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 					Block block = w.getHighestBlockAt(c.getX() * 16 + x, c.getZ() * 16 + z);
 					Block below = block.getRelative(BlockFace.DOWN);
 					if (block.getTemperature() < 0.1 && (modifier > 0 || block.getLightLevel() > 12)) {
+						if (wgChecks) {
+							StateFlag flag = modifier > 0 ? DefaultFlag.SNOW_FALL : DefaultFlag.SNOW_MELT;
+							if (!WGBukkit.getRegionManager(block.getWorld()).getApplicableRegions(block.getLocation()).allows(flag)) {
+								continue;
+							}
+						}
 						if (block.getType() == Material.SNOW) {
 							if (snowSmoothing) {
 								for (BlockFace face: horizontalFaces) {
 									Block neighbour = block.getRelative(face);
 									if (neighbour.getType() == Material.SNOW || neighbour.getType() == Material.AIR && BlockInfo.isSolid(neighbour.getRelative(BlockFace.DOWN))) {
-										if (modifier > 0 && block.getData() - neighbour.getData() >= 2 * modifier) {
+										if (modifier > 0 && block.getData() - neighbour.getData() >= 2) {
 											block = neighbour;
 											break;
-										} else if (modifier < 0 && block.getData() - neighbour.getData() <= 2 * modifier) {
+										} else if (modifier < 0 && block.getData() - neighbour.getData() <= -2) {
 											block = neighbour;
 											break;
 										}
@@ -218,15 +227,12 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 		return slideManager;
 	}
 
-	/**
-	 * @return the perWorldConfig
-	 */
 	public PerWorldConfiguration getPerWorldConfig() {
 		return perWorldConfig;
 	}
 
-	public boolean isWorldGuardEnabled() {
-		return worldGuardPlugin != null;
+	public boolean isWorldGuardAvailable() {
+		return worldGuardPlugin != null && worldGuardPlugin.isEnabled();
 	}
 
 	public WorldGuardPlugin getWorldGuardPlugin() {
@@ -246,7 +252,7 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 		slideManager.setMaxSlidesPerTick(getConfig().getInt("max_slides_per_tick", 20));
 		slideManager.setMaxSlidesTotal(getConfig().getInt("max_slides_total", 200));
 
-		if (isWorldGuardEnabled()) {
+		if (isWorldGuardAvailable()) {
 			slideManager.setWorldGuardEnabled(getConfig().getBoolean("worldguard.enabled"));
 			slideManager.setWorldGuardFlag(getConfig().getString("worldguard.use_flag"));
 		}
@@ -270,7 +276,7 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 
 	@Override
 	public void onConfigurationValidate(ConfigurationManager configurationManager, String key, Object oldVal, Object newVal) {
-		if (key.startsWith("worldguard.") && !isWorldGuardEnabled()) {
+		if (key.startsWith("worldguard.") && !isWorldGuardAvailable()) {
 			throw new DHUtilsException("WorldGuard plugin is not enabled");
 		}
 		if (newVal != null && (key.contains("slide_chance.") && newVal != null || key.contains("cliff_stability") || key.contains("explode_effect_chance"))) {
@@ -323,5 +329,4 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 		}
 		return true;
 	}
-
 }

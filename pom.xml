@@ -4,7 +4,7 @@
 	<groupId>me.desht</groupId>
 	<artifactId>landslide</artifactId>
 	<packaging>jar</packaging>
-	<version>1.2.1</version>
+	<version>1.2.2</version>
 	<name>Landslide</name>
 	<url>http://maven.apache.org</url>
 	<properties>

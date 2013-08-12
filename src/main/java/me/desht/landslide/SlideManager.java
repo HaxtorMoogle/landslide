@@ -187,6 +187,10 @@ public class SlideManager {
 		this.worldGuardEnabled = enabled;
 	}
 
+	public boolean isWorldGuardEnabled() {
+		return worldGuardEnabled;
+	}
+
 	public void setWorldGuardFlag(String flagName) {
 		if (flagName == null || flagName.isEmpty()) {
 			return;
@@ -225,7 +229,7 @@ public class SlideManager {
 	}
 
 	private boolean isProtectedByWG(Block b) {
-		if (!plugin.isWorldGuardEnabled() || !worldGuardEnabled) {
+		if (!plugin.isWorldGuardAvailable() || !worldGuardEnabled) {
 			return false;
 		}
 		boolean ret = !WGBukkit.getRegionManager(b.getWorld()).getApplicableRegions(b.getLocation()).allows(wgFlag);
