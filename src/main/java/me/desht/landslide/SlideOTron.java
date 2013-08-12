@@ -88,7 +88,7 @@ public class SlideOTron {
 	}
 
 	public static void setupRecipe() {
-		ShapedRecipe recipe = new ShapedRecipe(new SlideOTron().toItemStack());
+		ShapedRecipe recipe = new ShapedRecipe(new SlideOTron().toItemStack(1));
 		recipe.shape("ABC");
 		recipe.setIngredient('A', Material.ENDER_PEARL);
 		recipe.setIngredient('B', Material.BLAZE_ROD);
@@ -142,17 +142,13 @@ public class SlideOTron {
 		return item;
 	}
 
-	private ItemStack toItemStack() {
-		return toItemStack(1);
-	}
-
 	@Override
 	public String toString() {
 		return "Slide-O-Tron: mode=" + mode + " power=" + power;
 	}
 
 	public static ItemStack makeWand() {
-		return new SlideOTron().toItemStack();
+		return new SlideOTron().toItemStack(1);
 	}
 
 	/**
@@ -167,7 +163,7 @@ public class SlideOTron {
 			return null;
 		}
 		ItemMeta meta = item.getItemMeta();
-		if (!meta.getDisplayName().startsWith(DISPLAY_PREFIX)) {
+		if (meta.getDisplayName() == null || !meta.getDisplayName().startsWith(DISPLAY_PREFIX)) {
 			return null;
 		}
 		return new SlideOTron(meta);
