@@ -1,6 +1,6 @@
 # Landslide
 
-Landslide is a Bukkit plugin that allows you to play Checkers (Draughts) on your CraftBukkit Minecraft server.
+Landslide is a Bukkit plugin that significantly changes the stackability mechanics of blocks in Minecraft.
  
 ## Installation and Usage
 
