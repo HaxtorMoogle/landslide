@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import me.desht.dhutils.ItemGlow;
 import me.desht.dhutils.MiscUtil;
 import me.desht.dhutils.cuboid.Cuboid;
 import me.desht.dhutils.cuboid.Cuboid.CuboidDirection;
@@ -139,6 +140,9 @@ public class SlideOTron {
 		lore.add(ChatColor.GRAY + ChatColor.ITALIC.toString() + "Shift + Mouse-wheel: change power");
 		meta.setLore(lore);
 		item.setItemMeta(meta);
+		if (LandslidePlugin.getInstance().isProtocolLibEnabled()) {
+			ItemGlow.setGlowing(item, true);
+		}
 		return item;
 	}
 

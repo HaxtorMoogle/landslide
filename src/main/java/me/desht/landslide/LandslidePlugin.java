@@ -22,13 +22,8 @@ import java.util.List;
 import java.util.Random;
 import java.util.logging.Level;
 
-import me.desht.dhutils.ConfigurationListener;
-import me.desht.dhutils.ConfigurationManager;
-import me.desht.dhutils.DHUtilsException;
-import me.desht.dhutils.DHValidate;
-import me.desht.dhutils.LogUtils;
-import me.desht.dhutils.MessagePager;
-import me.desht.dhutils.MiscUtil;
+import com.comphenix.protocol.ProtocolLibrary;
+import me.desht.dhutils.*;
 import me.desht.dhutils.commands.CommandManager;
 import me.desht.landslide.commands.DeleteCfgCommand;
 import me.desht.landslide.commands.GetcfgCommand;
@@ -75,9 +70,14 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 
 	private int ticks = 0;
 	private int snowInterval = 600;
+	private boolean protocolLibEnabled = false;
+
+	private static LandslidePlugin instance = null;
 
 	@Override
 	public void onEnable() {
+		instance = this;
+
 		LogUtils.init(this);
 
 		configManager = new ConfigurationManager(this, this);
@@ -85,6 +85,7 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 		MiscUtil.init(this);
 
 		setupWorldGuard();
+		setupProtocolLib();
 
 		cmds.registerCommand(new ReloadCommand());
 		cmds.registerCommand(new GetcfgCommand());
@@ -102,6 +103,10 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 		MessagePager.setPageCmd("/landslide page [#|n|p]");
 		MessagePager.setDefaultPageSize(getConfig().getInt("pager.lines", 0));
 
+		if (protocolLibEnabled) {
+			ItemGlow.init(this);
+		}
+
 		SlideOTron.setupRecipe();
 
 		PluginManager pm = this.getServer().getPluginManager();
@@ -118,6 +123,11 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 		}, 1L, 1L);
 
 		setupMetrics();
+	}
+
+	@Override
+	public void onDisable() {
+		instance = null;
 	}
 
 	@Override
@@ -144,12 +154,28 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 		}
 	}
 
+	public boolean isProtocolLibEnabled() {
+		return protocolLibEnabled;
+	}
+
+	public static LandslidePlugin getInstance() {
+		return instance;
+	}
+
 	private void setupWorldGuard() {
 		Plugin plugin = getServer().getPluginManager().getPlugin("WorldGuard");
 
 		if (plugin != null && (plugin instanceof WorldGuardPlugin)) {
 			LogUtils.fine("WorldGuard detected");
 			worldGuardPlugin =  (WorldGuardPlugin) plugin;
+		}
+	}
+
+	private void setupProtocolLib() {
+		Plugin pLib = getServer().getPluginManager().getPlugin("ProtocolLib");
+		if (pLib != null && pLib instanceof ProtocolLibrary && pLib.isEnabled()) {
+			protocolLibEnabled = true;
+			LogUtils.fine("Hooked ProtocolLib v" + pLib.getDescription().getVersion());
 		}
 	}
 
