@@ -231,7 +231,7 @@ public class EventListener implements Listener {
 			double yOff = b.getY() - centre.getBlockY();
 			double zOff = b.getZ() - centre.getBlockZ();
 			double dist = Math.sqrt(xOff * xOff + yOff * yOff + zOff * zOff);
-			double power = Math.abs((double)distMax - (double)dist) / 3.0;
+			double power = Math.abs(distMax - dist) / 3.0;
 			Vector vec = new Vector(xOff, yOff, zOff).normalize().multiply(forceMult * power);
 			plugin.getSlideManager().scheduleBlockFling(b, vec.clone(), dirModifier.clone());
 		}
@@ -362,7 +362,8 @@ public class EventListener implements Listener {
 				}
 			}
 			BlockFace face = plugin.getSlideManager().wouldSlide(block);
-			if (face != null) {
+			// sand/gravel/anvil dropping down will be handled by vanilla mechanics
+			if (face != null && (face != BlockFace.DOWN || !block.getType().hasGravity())) {
 				return plugin.getSlideManager().scheduleBlockSlide(block, face, mat, data, immediate);
 			}
 		}
