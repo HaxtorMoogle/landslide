@@ -17,10 +17,7 @@ You should have received a copy of the GNU General Public License
 along with Landslide.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import me.desht.dhutils.LogUtils;
 
@@ -40,10 +37,13 @@ public class SlideManager {
 	private static final int RING_BUFFER_SIZE = 30;
 	private static final int MAX_SLIDE_DELAY = 20;
 
+	private static final Block[] neighbours = new Block[BlockFace.values().length];
+
 	private final LandslidePlugin plugin;
 	private final Set<Location> slideTo = new HashSet<Location>();
 	private final List<ScheduledBlockMove>[] slides;
 	private final List<Drop>[] drops;
+	private final Set<Material> bracingMaterials = new HashSet<Material>();
 
 	private int pointer;
 	private int totalSlidesScheduled;
@@ -152,18 +152,32 @@ public class SlideManager {
 		return maxSlidesTotal;
 	}
 
+	/**
+	 * Check if a block would slide, given its position and neighbours.  Note that the
+	 * slidiness of the block's material has already been checked at this point.
+	 *
+	 * @param block the block to check
+	 * @return the direction in which the block should slide, or null if it should not
+	 */
 	public BlockFace wouldSlide(Block block) {
-		Block below = block.getRelative(BlockFace.DOWN);
+		for (BlockFace face : LandslidePlugin.allFaces) {
+			neighbours[face.ordinal()] = block.getRelative(face);
+			if (bracingMaterials.contains(neighbours[face.ordinal()].getType())) {
+				return null;
+			}
+		}
+
+		Block below = neighbours[BlockFace.DOWN.ordinal()];
 		if (!BlockInfo.isSolid(below)) {
 			return BlockFace.DOWN;
 		}
 		if (!plugin.getPerWorldConfig().getHorizontalSlides(block.getWorld())) {
 			return null;
 		}
-		Block above = block.getRelative(BlockFace.UP);
+		Block above = neighbours[BlockFace.UP.ordinal()];
 		List<BlockFace>	possibles = new ArrayList<BlockFace>();
 		for (BlockFace face : LandslidePlugin.horizontalFaces) {
-			Block sideBlock = block.getRelative(face);
+			Block sideBlock = neighbours[face.ordinal()];
 			if (!BlockInfo.isSolid(below.getRelative(face)) &&
 					!isThickSnowLayer(below.getRelative(face)) &&
 					!BlockInfo.isSolid(sideBlock) &&
@@ -233,6 +247,17 @@ public class SlideManager {
 			return false;
 		}
 		return !WGBukkit.getRegionManager(b.getWorld()).getApplicableRegions(b.getLocation()).allows(wgFlag);
+	}
+
+	public void setBracingMaterials(List<String> bracingMaterialNames) {
+		bracingMaterials.clear();
+		for (String s : bracingMaterialNames) {
+			try {
+				bracingMaterials.add(Material.matchMaterial(s));
+			} catch (IllegalArgumentException e) {
+				LogUtils.warning("invalid material " + s + " in bracing_materials");
+			}
+		}
 	}
 
 	private class Slide implements ScheduledBlockMove {

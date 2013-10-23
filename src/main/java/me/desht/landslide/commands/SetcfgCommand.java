@@ -1,5 +1,7 @@
 package me.desht.landslide.commands;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -50,7 +52,13 @@ public class SetcfgCommand extends AbstractCommand {
 					configManager.insert(key, def);
 				}
 			}
-			configManager.set(key, val);
+			if (args.length > 2) {
+				List<String> list = new ArrayList<String>(args.length - 1);
+				list.addAll(Arrays.asList(args).subList(1, args.length));
+				configManager.set(key, list);
+			} else {
+				configManager.set(key, val);
+			}
 			Object res = configManager.get(key);
 			MiscUtil.statusMessage(sender, key + " is now set to '&e" + res + "&-'");
 		} catch (DHUtilsException e) {

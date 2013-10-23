@@ -258,6 +258,8 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 		}
 
 		snowInterval = getConfig().getInt("snow.check_interval") * 20;
+
+		slideManager.setBracingMaterials(getConfig().getStringList("bracing_materials"));
 	}
 
 	public void validateWorldGuardFlag(String flagName) {
@@ -288,6 +290,12 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 			} catch (IllegalArgumentException e) {
 				throw new DHUtilsException(e.getMessage());
 			}
+		} else if (key.equals("bracing_materials")) {
+			for (String s : (List<String>) newVal) {
+				if (!s.startsWith("-") && Material.matchMaterial(s) == null) {
+					throw new DHUtilsException("Invalid material: " + s);
+				}
+			}
 		} else if (key.startsWith("transform.")) {
 			String s = key.substring(key.indexOf('.') + 1);
 			Material from = Material.matchMaterial(s);
@@ -316,6 +324,8 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 			slideManager.setWorldGuardFlag((String) newVal);
 		} else if (key.equals("snow.check_interval")) {
 			snowInterval = (Integer) newVal * 20;
+		} else if (key.equals("bracing_materials")) {
+			slideManager.setBracingMaterials(getConfig().getStringList("bracing_materials"));
 		} else {
 			getPerWorldConfig().processKey(getConfig(), key);
 		}
