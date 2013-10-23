@@ -26,6 +26,8 @@ import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.FallingBlock;
+import org.bukkit.material.PistonBaseMaterial;
+import org.bukkit.material.PistonExtensionMaterial;
 import org.bukkit.util.Vector;
 
 import com.sk89q.worldguard.bukkit.WGBukkit;
@@ -51,6 +53,8 @@ public class SlideManager {
 	private int maxSlidesTotal;
 	private Boolean worldGuardEnabled;
 	private StateFlag wgFlag;
+	private boolean stickyPistonsRetracted;
+	private boolean stickyPistonsExtended;
 
 	@SuppressWarnings("unchecked")
 	public SlideManager(LandslidePlugin plugin) {
@@ -162,22 +166,34 @@ public class SlideManager {
 	public BlockFace wouldSlide(Block block) {
 		for (BlockFace face : LandslidePlugin.allFaces) {
 			neighbours[face.ordinal()] = block.getRelative(face);
-			if (bracingMaterials.contains(neighbours[face.ordinal()].getType())) {
+			if (bracingMaterials.contains(getNeighbour(face).getType())) {
+				return null;
+			} else if (getNeighbour(face).getType() == Material.PISTON_STICKY_BASE && plugin.getConfig().getBoolean("sticky_pistons.retracted")) {
+				PistonBaseMaterial pbm = (PistonBaseMaterial) getNeighbour(face).getState().getData();
+				if (pbm.getFacing() == face.getOppositeFace()) {
+					return null;
+				}
+			} else if (getNeighbour(face).getType() == Material.PISTON_EXTENSION && plugin.getConfig().getBoolean("sticky_pistons.extended")) {
+				PistonExtensionMaterial pem = (PistonExtensionMaterial) getNeighbour(face).getState().getData();
+				if (pem.isSticky() && pem.getFacing() == face.getOppositeFace()) {
+					return null;
+				}
+			} else if (getNeighbour(face).getType() == Material.PISTON_MOVING_PIECE) {
 				return null;
 			}
 		}
 
-		Block below = neighbours[BlockFace.DOWN.ordinal()];
+		Block below = getNeighbour(BlockFace.DOWN);
 		if (!BlockInfo.isSolid(below)) {
 			return BlockFace.DOWN;
 		}
 		if (!plugin.getPerWorldConfig().getHorizontalSlides(block.getWorld())) {
 			return null;
 		}
-		Block above = neighbours[BlockFace.UP.ordinal()];
+		Block above = getNeighbour(BlockFace.UP);
 		List<BlockFace>	possibles = new ArrayList<BlockFace>();
 		for (BlockFace face : LandslidePlugin.horizontalFaces) {
-			Block sideBlock = neighbours[face.ordinal()];
+			Block sideBlock = getNeighbour(face);
 			if (!BlockInfo.isSolid(below.getRelative(face)) &&
 					!isThickSnowLayer(below.getRelative(face)) &&
 					!BlockInfo.isSolid(sideBlock) &&
@@ -191,6 +207,10 @@ public class SlideManager {
 		case 1: return possibles.get(0);
 		default: return possibles.get(plugin.getRandom().nextInt(possibles.size()));
 		}
+	}
+
+	private Block getNeighbour(BlockFace direction) {
+		return neighbours[direction.ordinal()];
 	}
 
 	private boolean isThickSnowLayer(Block b) {
@@ -258,6 +278,14 @@ public class SlideManager {
 				LogUtils.warning("invalid material " + s + " in bracing_materials");
 			}
 		}
+	}
+
+	public void setStickyPistonsRetracted(boolean sticky) {
+		stickyPistonsRetracted = sticky;
+	}
+
+	public void setStickyPistonsExtended(boolean sticky) {
+		stickyPistonsExtended = sticky;
 	}
 
 	private class Slide implements ScheduledBlockMove {

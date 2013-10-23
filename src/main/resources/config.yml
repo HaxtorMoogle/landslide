@@ -39,3 +39,6 @@ snow:
   slide_thickness: 2
   smoothing: false
 bracing_materials: []
+sticky_pistons:
+  retracted: true
+  extended: true

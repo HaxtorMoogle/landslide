@@ -69,7 +69,7 @@ public class EventListener implements Listener {
 		this.plugin = plugin;
 	}
 
-	@EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void onBlockPlace(BlockPlaceEvent event) {
 		if (!plugin.getPerWorldConfig().isEnabled(event.getBlock().getWorld())) {
 			return;
@@ -88,6 +88,11 @@ public class EventListener implements Listener {
 
 		Block block = event.getBlock();
 		FallingBlock fb = (FallingBlock) event.getEntity();
+
+		if (block.getType() == fb.getMaterial()) {
+			// looks like a block starting to fall - we don't care about that here
+			return;
+		}
 
 		if (block.getType() == Material.AIR && block.getRelative(BlockFace.DOWN).getType() == Material.SNOW) {
 			// trying to land on a thick snow layer - doesn't work well, so just drop an item
@@ -114,7 +119,6 @@ public class EventListener implements Listener {
 					fb.getWorld().playSound(fb.getLocation(), Sound.STEP_SNOW, 2.0f, 0.5f);
 				} else if (BlockInfo.isSolid(fb.getMaterial())) {
 					fb.getWorld().playSound(fb.getLocation(), landingSounds[plugin.getRandom().nextInt(landingSounds.length)], 2.0f, 0.5f);
-//					fb.getWorld().createExplosion(fb.getLocation(), 0.0f);
 				}
 			}
 		}
@@ -134,6 +138,23 @@ public class EventListener implements Listener {
 					if (loc.getBlockX() == block.getX() && loc.getBlockY() == block.getY() && loc.getBlockZ() == block.getZ()) {
 						((LivingEntity) e).damage(dmg);
 					}
+				}
+			}
+		}
+	}
+
+	@EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+	public void vanillaBlockFalling(EntityChangeBlockEvent event) {
+		Block block = event.getBlock();
+		if (block.getType().hasGravity() && event.getEntity() instanceof FallingBlock) {
+			FallingBlock fb = (FallingBlock) event.getEntity();
+			if (block.getType() == fb.getMaterial()) {
+				int chanceToSlide = plugin.getPerWorldConfig().getSlideChance(block.getWorld(), block.getType());
+				if (plugin.getRandom().nextInt(100) > chanceToSlide) {
+					event.setCancelled(true);
+				}
+				if (plugin.getSlideManager().wouldSlide(block) == null) {
+					event.setCancelled(true);
 				}
 			}
 		}
@@ -164,7 +185,7 @@ public class EventListener implements Listener {
 		}
 	}
 
-	@EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void onBlockPhysics(BlockPhysicsEvent event) {
 		if (!plugin.getPerWorldConfig().isEnabled(event.getBlock().getWorld())) {
 			return;
@@ -237,7 +258,7 @@ public class EventListener implements Listener {
 		}
 	}
 
-	@EventHandler
+	@EventHandler(ignoreCancelled = true)
 	public void onInteract(PlayerInteractEvent event) {
 		Player player = event.getPlayer();
 		SlideOTron wand = SlideOTron.getWand(player);
@@ -269,7 +290,7 @@ public class EventListener implements Listener {
 		}
 	}
 
-	@EventHandler
+	@EventHandler(ignoreCancelled = true)
 	public void mouseWheel(PlayerItemHeldEvent event) {
 		Player player = event.getPlayer();
 		if (!player.isSneaking()) {

@@ -260,6 +260,8 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 		snowInterval = getConfig().getInt("snow.check_interval") * 20;
 
 		slideManager.setBracingMaterials(getConfig().getStringList("bracing_materials"));
+		slideManager.setStickyPistonsRetracted(getConfig().getBoolean("sticky_pistons.retracted"));
+		slideManager.setStickyPistonsExtended(getConfig().getBoolean("sticky_pistons.extended"));
 	}
 
 	public void validateWorldGuardFlag(String flagName) {
@@ -325,7 +327,11 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 		} else if (key.equals("snow.check_interval")) {
 			snowInterval = (Integer) newVal * 20;
 		} else if (key.equals("bracing_materials")) {
-			slideManager.setBracingMaterials(getConfig().getStringList("bracing_materials"));
+			slideManager.setBracingMaterials((List<String>) newVal);
+		} else if (key.equals("sticky_pistons.retracted")) {
+			slideManager.setStickyPistonsRetracted((Boolean) newVal);
+		} else if (key.equals("sticky_pistons.extended")) {
+			slideManager.setStickyPistonsExtended((Boolean) newVal);
 		} else {
 			getPerWorldConfig().processKey(getConfig(), key);
 		}
