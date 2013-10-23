@@ -10,6 +10,7 @@ import java.util.regex.Pattern;
 
 import me.desht.dhutils.ItemGlow;
 import me.desht.dhutils.MiscUtil;
+import me.desht.dhutils.ParticleEffect;
 import me.desht.dhutils.cuboid.Cuboid;
 import me.desht.dhutils.cuboid.Cuboid.CuboidDirection;
 
@@ -201,7 +202,11 @@ public class SlideOTron {
 				}
 				if (bb.getType() == Material.AIR || bb.isLiquid()) {
 					if (n > 3 && n % 2 == 0) {
-						bb.getWorld().playEffect(bb.getLocation(), Effect.SMOKE, 0);
+						if (plugin.isProtocolLibEnabled()) {
+							ParticleEffect.WITCH_MAGIC.play(bb.getLocation(), 0.2f, 0.2f, 0.2f, 1.0f, 3);
+						} else {
+							bb.getWorld().playEffect(bb.getLocation(), Effect.SMOKE, 0);
+						}
 					}
 				} else {
 					forceSlide(plugin, player, bb);
