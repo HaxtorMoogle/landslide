@@ -147,7 +147,7 @@ public class PerWorldConfiguration {
 		private Boolean dropItems = null;
 		private Boolean horizontalSlides = null;
 		private final Map<Material,Integer> slideChances = new HashMap<Material,Integer>();
-		private BlockTransform transforms = new BlockTransform();
+		private final BlockTransform transforms = new BlockTransform();
 		private Integer snowMeltChance = null;
 		private Integer snowFormChance = null;
 		private Integer snowSlideThickness = null;

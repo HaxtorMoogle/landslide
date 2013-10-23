@@ -34,7 +34,7 @@ public class SetcfgCommand extends AbstractCommand {
 
 		ConfigurationManager configManager = ((LandslidePlugin) plugin).getConfigManager();
 
-		String worldName = null;
+		String worldName;
 		String subKey = key;
 		Matcher m = worldPat.matcher(key);
 		if (m.find() && m.groupCount() == 2) {

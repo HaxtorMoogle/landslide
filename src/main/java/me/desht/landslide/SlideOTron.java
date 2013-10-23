@@ -154,7 +154,7 @@ public class SlideOTron {
 	/**
 	 * Get the Slide-O-Tron that the player is holding, if any.
 	 *
-	 * @param player
+	 * @param player the player to check
 	 * @return returns the Slide-O-Tron, or null if the player isn't holding one
 	 */
 	public static SlideOTron getWand(Player player) {
@@ -169,7 +169,7 @@ public class SlideOTron {
 		return new SlideOTron(meta);
 	}
 
-	private static HashSet<Byte> transparent = new HashSet<Byte>();
+	private static final HashSet<Byte> transparent = new HashSet<Byte>();
 	static {
 		transparent.add((byte)Material.STATIONARY_WATER.getId());
 		transparent.add((byte)Material.AIR.getId());

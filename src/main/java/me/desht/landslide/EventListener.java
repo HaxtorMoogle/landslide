@@ -53,10 +53,10 @@ import org.bukkit.util.Vector;
  */
 public class EventListener implements Listener {
 
-	private LandslidePlugin plugin;
+	private final LandslidePlugin plugin;
 
 	// sounds to play at random when blocks land
-	private static Sound[] landingSounds = new Sound[] {
+	private static final Sound[] landingSounds = new Sound[] {
 		Sound.STEP_GRAVEL,
 		Sound.STEP_SAND,
 		Sound.STEP_STONE,

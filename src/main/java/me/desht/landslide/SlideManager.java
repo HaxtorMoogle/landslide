@@ -166,7 +166,7 @@ public class SlideManager {
 			Block sideBlock = block.getRelative(face);
 			if (!BlockInfo.isSolid(below.getRelative(face)) &&
 					!isThickSnowLayer(below.getRelative(face)) &&
-					!BlockInfo.isSolid(sideBlock) && 
+					!BlockInfo.isSolid(sideBlock) &&
 					!BlockInfo.isSolid(above.getRelative(face)) &&
 					!slideTo.contains(sideBlock.getLocation())) {
 				possibles.add(face);
@@ -232,8 +232,7 @@ public class SlideManager {
 		if (!plugin.isWorldGuardAvailable() || !worldGuardEnabled) {
 			return false;
 		}
-		boolean ret = !WGBukkit.getRegionManager(b.getWorld()).getApplicableRegions(b.getLocation()).allows(wgFlag);
-		return ret;
+		return !WGBukkit.getRegionManager(b.getWorld()).getApplicableRegions(b.getLocation()).allows(wgFlag);
 	}
 
 	private class Slide implements ScheduledBlockMove {
@@ -307,8 +306,8 @@ public class SlideManager {
 	private class Fling implements ScheduledBlockMove {
 		private final Location loc;
 		private final Vector vec;
-		private Material blockType;
-		private byte data;
+		private final Material blockType;
+		private final byte data;
 
 		private Fling(Location location, Vector vec, Material blockType, byte data) {
 			this.loc = location;

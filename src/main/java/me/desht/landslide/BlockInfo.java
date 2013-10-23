@@ -6,7 +6,7 @@ import org.bukkit.Material;
 import org.bukkit.block.Block;
 
 public class BlockInfo {
-	static BitSet solidSet = new BitSet(256);
+	private static final BitSet solidSet = new BitSet(256);
 
 	static {
 		for (int i = 0; i < 256; i++) {
@@ -17,7 +17,7 @@ public class BlockInfo {
 	}
 
 	public static boolean isSolid(Material mat) {
-		return mat.isBlock() ? solidSet.get(mat.getId()) : false;
+		return mat.isBlock() && solidSet.get(mat.getId());
 	}
 
 	public static boolean isSolid(Block b) {
