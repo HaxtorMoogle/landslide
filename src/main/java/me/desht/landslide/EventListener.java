@@ -258,7 +258,7 @@ public class EventListener implements Listener {
 		}
 	}
 
-	@EventHandler(ignoreCancelled = true)
+	@EventHandler
 	public void onInteract(PlayerInteractEvent event) {
 		Player player = event.getPlayer();
 		SlideOTron wand = SlideOTron.getWand(player);
