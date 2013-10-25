@@ -3,7 +3,7 @@ main: me.desht.landslide.LandslidePlugin
 version: ${project.version}
 author: desht
 website: http://dev.bukkit.org/bukkit-mods/landslide
-softdepend: [ WorldGuard ]
+softdepend: [ WorldGuard, ProtocolLib ]
 
 commands:
    landslide:
