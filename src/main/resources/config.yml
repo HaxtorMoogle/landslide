@@ -29,6 +29,8 @@ slide_chance:
   grass: 25
   sand: 100
   gravel: 100
+drop_chance:
+  dirt: 0
 transform:
   grass: dirt
 snow:

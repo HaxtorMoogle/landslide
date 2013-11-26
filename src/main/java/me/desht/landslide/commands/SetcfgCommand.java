@@ -70,7 +70,7 @@ public class SetcfgCommand extends AbstractCommand {
 	}
 
 	private Object getDefault(ConfigurationManager mgr, String key) {
-		if (key.startsWith("slide_chance.")) {
+		if (key.startsWith("slide_chance.") || key.startsWith("drop_chance.")) {
 			String mat = key.substring(key.indexOf(".") + 1);
 			DHValidate.notNull(Material.matchMaterial(mat), "Unknown material: " + mat);
 			return 0;

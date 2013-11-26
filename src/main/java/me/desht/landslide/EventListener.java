@@ -368,14 +368,17 @@ public class EventListener implements Listener {
 		return false;
 	}
 
-	private boolean checkForSlide(Block block, Material mat, byte data, boolean immediate, boolean always) {
-		int chance = always ? 100 : plugin.getPerWorldConfig().getSlideChance(block.getWorld(), mat);
+	private boolean checkForSlide(Block block, Material mat, byte data, boolean immediate, boolean justLanded) {
+		int slideChance = plugin.getPerWorldConfig().getSlideChance(block.getWorld(), mat);
+		int dropChance = plugin.getPerWorldConfig().getDropChance(block.getWorld(), mat);
 		boolean orphan = plugin.isOrphan(block);
-		if (chance > 0 && orphan && plugin.getConfig().getBoolean("drop_slidy_floaters")) {
+
+		if ((slideChance > 0 || dropChance > 0) && orphan && plugin.getConfig().getBoolean("drop_slidy_floaters")) {
 			return plugin.getSlideManager().scheduleBlockSlide(block, BlockFace.DOWN, mat, data, true);
 		} else if (orphan && plugin.getConfig().getBoolean("drop_nonslidy_floaters")) {
 			return plugin.getSlideManager().scheduleBlockSlide(block, BlockFace.DOWN, mat, data, true);
-		} else if (chance > plugin.getRandom().nextInt(100)) {
+		}
+		if (slideChance > plugin.getRandom().nextInt(100) || justLanded && slideChance > 0) {
 			if (block.getType() == Material.SNOW) {
 				// special case; snow can slide off in layers, and the minimum thickness is configurable
 				if (block.getData() < plugin.getPerWorldConfig().getSnowSlideThickness(block.getWorld()) - 1) {
@@ -385,6 +388,11 @@ public class EventListener implements Listener {
 			BlockFace face = plugin.getSlideManager().wouldSlide(block);
 			// sand/gravel/anvil dropping down will be handled by vanilla mechanics
 			if (face != null && (face != BlockFace.DOWN || !block.getType().hasGravity())) {
+				return plugin.getSlideManager().scheduleBlockSlide(block, face, mat, data, immediate);
+			}
+		} else if (dropChance > plugin.getRandom().nextInt(100)) {
+			BlockFace face = plugin.getSlideManager().wouldSlide(block);
+			if (face == BlockFace.DOWN) {
 				return plugin.getSlideManager().scheduleBlockSlide(block, face, mat, data, immediate);
 			}
 		}

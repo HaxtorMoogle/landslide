@@ -60,6 +60,8 @@ public class PerWorldConfiguration {
 			getWorldParams(worldName).setCliffStability(conf.getInt(fullKey));
 		} else if (key.equals("slide_chance")) {
 			getWorldParams(worldName).setSlideChance(subKey, conf.getInt(fullKey));
+		} else if (key.equals("drop_chance")) {
+			getWorldParams(worldName).setDropChance(subKey, conf.getInt(fullKey));
 		} else if (key.equals("drop_items")) {
 			getWorldParams(worldName).setDropItems(conf.getBoolean(fullKey));
 		} else if (key.equals("transform")) {
@@ -100,6 +102,10 @@ public class PerWorldConfiguration {
 
 	public int getSlideChance(World world, Material mat) {
 		return getWorldParams(world.getName()).getSlideChance(mat);
+	}
+
+	public int getDropChance(World world, Material mat) {
+		return getWorldParams(world.getName()).getDropChance(mat);
 	}
 
 	public boolean getDropItems(World world) {
@@ -147,6 +153,7 @@ public class PerWorldConfiguration {
 		private Boolean dropItems = null;
 		private Boolean horizontalSlides = null;
 		private final Map<Material,Integer> slideChances = new HashMap<Material,Integer>();
+		private final Map<Material,Integer> dropChances = new HashMap<Material,Integer>();
 		private final BlockTransform transforms = new BlockTransform();
 		private Integer snowMeltChance = null;
 		private Integer snowFormChance = null;
@@ -229,6 +236,21 @@ public class PerWorldConfiguration {
 
 		private int getSlideChance(Material mat, int def) {
 			return slideChances.containsKey(mat)? slideChances.get(mat) : def;
+		}
+
+		public void setDropChance(String matName, int chance) {
+			Material mat = Material.matchMaterial(matName);
+			if (mat != null) {
+				dropChances.put(mat, chance);
+			}
+		}
+
+		public int getDropChance(Material mat) {
+			return dropChances.containsKey(mat)? dropChances.get(mat) : defaultWorld.getDropChance(mat, 0);
+		}
+
+		private int getDropChance(Material mat, int def) {
+			return dropChances.containsKey(mat)? dropChances.get(mat) : def;
 		}
 
 		public int getExplodeEffectChance() {

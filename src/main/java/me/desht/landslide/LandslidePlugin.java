@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Random;
 import java.util.logging.Level;
+import java.util.regex.Pattern;
 
 import com.comphenix.protocol.ProtocolLibrary;
 import me.desht.dhutils.*;
@@ -304,12 +305,15 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 		throw new DHUtilsException("Unknown WorldGuard flag " + flagName);
 	}
 
+	private static final Pattern pctPat = Pattern.compile("(slide_chance\\.|drop_chance\\.|cliff_stability|explode_effect_chance)");
+
 	@Override
 	public void onConfigurationValidate(ConfigurationManager configurationManager, String key, Object oldVal, Object newVal) {
 		if (key.startsWith("worldguard.") && !isWorldGuardAvailable()) {
 			throw new DHUtilsException("WorldGuard plugin is not enabled");
 		}
-		if (newVal != null && (key.contains("slide_chance.") && newVal != null || key.contains("cliff_stability") || key.contains("explode_effect_chance"))) {
+
+		if (newVal != null && pctPat.matcher(key).matches()) { // key.contains("slide_chance.")  || key.contains("cliff_stability") || key.contains("explode_effect_chance"))) {
 			int pct = (Integer) newVal;
 			DHValidate.isTrue(pct >= 0 && pct <= 100, "Value must be a percentage (0-100 inclusive)");
 		} else if (key.equals("log_level")) {

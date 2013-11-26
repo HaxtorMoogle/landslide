@@ -168,12 +168,12 @@ public class SlideManager {
 			neighbours[face.ordinal()] = block.getRelative(face);
 			if (bracingMaterials.contains(getNeighbour(face).getType())) {
 				return null;
-			} else if (getNeighbour(face).getType() == Material.PISTON_STICKY_BASE && plugin.getConfig().getBoolean("sticky_pistons.retracted")) {
+			} else if (getNeighbour(face).getType() == Material.PISTON_STICKY_BASE && stickyPistonsRetracted) {
 				PistonBaseMaterial pbm = (PistonBaseMaterial) getNeighbour(face).getState().getData();
 				if (pbm.getFacing() == face.getOppositeFace()) {
 					return null;
 				}
-			} else if (getNeighbour(face).getType() == Material.PISTON_EXTENSION && plugin.getConfig().getBoolean("sticky_pistons.extended")) {
+			} else if (getNeighbour(face).getType() == Material.PISTON_EXTENSION && stickyPistonsExtended) {
 				PistonExtensionMaterial pem = (PistonExtensionMaterial) getNeighbour(face).getState().getData();
 				if (pem.isSticky() && pem.getFacing() == face.getOppositeFace()) {
 					return null;
