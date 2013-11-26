@@ -55,6 +55,7 @@ public class SlideManager {
 	private StateFlag wgFlag;
 	private boolean stickyPistonsRetracted;
 	private boolean stickyPistonsExtended;
+	private int bracingDistance;
 
 	@SuppressWarnings("unchecked")
 	public SlideManager(LandslidePlugin plugin) {
@@ -156,6 +157,23 @@ public class SlideManager {
 		return maxSlidesTotal;
 	}
 
+	private boolean isBraced(Block block, BlockFace face) {
+		if (bracingDistance <= 0) {
+			return false;
+		}
+		if (bracingMaterials.contains(getNeighbour(face).getType())) {
+			return true;
+		}
+		if (bracingDistance > 1) {
+			for (int i = 2; i <= bracingDistance; i++) {
+				if (bracingMaterials.contains(block.getRelative(face, i).getType())) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
 	/**
 	 * Check if a block would slide, given its position and neighbours.  Note that the
 	 * slidiness of the block's material has already been checked at this point.
@@ -166,7 +184,7 @@ public class SlideManager {
 	public BlockFace wouldSlide(Block block) {
 		for (BlockFace face : LandslidePlugin.allFaces) {
 			neighbours[face.ordinal()] = block.getRelative(face);
-			if (bracingMaterials.contains(getNeighbour(face).getType())) {
+			if (isBraced(block, face)) {
 				return null;
 			} else if (getNeighbour(face).getType() == Material.PISTON_STICKY_BASE && stickyPistonsRetracted) {
 				PistonBaseMaterial pbm = (PistonBaseMaterial) getNeighbour(face).getState().getData();
@@ -286,6 +304,10 @@ public class SlideManager {
 
 	public void setStickyPistonsExtended(boolean sticky) {
 		stickyPistonsExtended = sticky;
+	}
+
+	public void setBracingDistance(Integer bracingDistance) {
+		this.bracingDistance = bracingDistance;
 	}
 
 	private class Slide implements ScheduledBlockMove {

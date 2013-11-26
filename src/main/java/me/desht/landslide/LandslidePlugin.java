@@ -287,6 +287,7 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 		snowInterval = getConfig().getInt("snow.check_interval") * 20;
 
 		slideManager.setBracingMaterials(getConfig().getStringList("bracing_materials"));
+		slideManager.setBracingDistance(getConfig().getInt("bracing_distance"));
 		slideManager.setStickyPistonsRetracted(getConfig().getBoolean("sticky_pistons.retracted"));
 		slideManager.setStickyPistonsExtended(getConfig().getBoolean("sticky_pistons.extended"));
 	}
@@ -313,7 +314,7 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 			throw new DHUtilsException("WorldGuard plugin is not enabled");
 		}
 
-		if (newVal != null && pctPat.matcher(key).matches()) { // key.contains("slide_chance.")  || key.contains("cliff_stability") || key.contains("explode_effect_chance"))) {
+		if (newVal != null && pctPat.matcher(key).find()) { // key.contains("slide_chance.")  || key.contains("cliff_stability") || key.contains("explode_effect_chance"))) {
 			int pct = (Integer) newVal;
 			DHValidate.isTrue(pct >= 0 && pct <= 100, "Value must be a percentage (0-100 inclusive)");
 		} else if (key.equals("log_level")) {
@@ -328,6 +329,8 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 					throw new DHUtilsException("Invalid material: " + s);
 				}
 			}
+		} else if (key.equals("bracing_distance")) {
+			DHValidate.isTrue((Integer) newVal >= 0, "Value must be >= 0");
 		} else if (key.startsWith("transform.")) {
 			String s = key.substring(key.indexOf('.') + 1);
 			Material from = Material.matchMaterial(s);
@@ -358,6 +361,8 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 			snowInterval = (Integer) newVal * 20;
 		} else if (key.equals("bracing_materials")) {
 			slideManager.setBracingMaterials((List<String>) newVal);
+		} else if (key.equals("bracing_distance")) {
+			slideManager.setBracingDistance((Integer) newVal);
 		} else if (key.equals("sticky_pistons.retracted")) {
 			slideManager.setStickyPistonsRetracted((Boolean) newVal);
 		} else if (key.equals("sticky_pistons.extended")) {
