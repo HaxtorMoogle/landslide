@@ -9,6 +9,11 @@ import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.configuration.Configuration;
 
+/**
+ * Cache the per-world parameters.  We cache the parameters here when the plugin starts or when
+ * the configuration changes to avoid the lookup overhead of getting parameters from the plugin
+ * configuration.
+ */
 public class PerWorldConfiguration {
 	private static final String WORLD_DEFAULTS = "*DEFAULT";
 
