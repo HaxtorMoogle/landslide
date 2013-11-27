@@ -57,6 +57,10 @@ public class SlideManager {
 	private boolean stickyPistonsExtended;
 	private int bracingDistance;
 
+	public interface ScheduledBlockMove {
+		public FallingBlock initiateMove();
+	}
+
 	@SuppressWarnings("unchecked")
 	public SlideManager(LandslidePlugin plugin) {
 		this.plugin = plugin;
