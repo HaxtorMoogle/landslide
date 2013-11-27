@@ -210,7 +210,7 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 							if (snowSmoothing) {
 								for (BlockFace face: horizontalFaces) {
 									Block neighbour = block.getRelative(face);
-									if (neighbour.getType() == Material.SNOW || neighbour.getType() == Material.AIR && BlockInfo.isSolid(neighbour.getRelative(BlockFace.DOWN))) {
+									if (neighbour.getType() == Material.SNOW || neighbour.getType() == Material.AIR && neighbour.getRelative(BlockFace.DOWN).getType().isSolid()) {
 										if (modifier > 0 && block.getData() - neighbour.getData() >= 2) {
 											block = neighbour;
 											break;
@@ -374,7 +374,7 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 
 	public boolean isOrphan(Block block) {
 		for (BlockFace f : LandslidePlugin.allFaces) {
-			if (BlockInfo.isSolid(block.getRelative(f))) {
+			if (block.getRelative(f).getType().isSolid()) {
 				return false;
 			}
 		}

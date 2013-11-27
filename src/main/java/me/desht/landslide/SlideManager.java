@@ -202,7 +202,7 @@ public class SlideManager {
 		}
 
 		Block below = getNeighbour(BlockFace.DOWN);
-		if (!BlockInfo.isSolid(below)) {
+		if (!below.getType().isSolid()) {
 			return BlockFace.DOWN;
 		}
 		if (!plugin.getPerWorldConfig().getHorizontalSlides(block.getWorld())) {
@@ -212,10 +212,10 @@ public class SlideManager {
 		List<BlockFace>	possibles = new ArrayList<BlockFace>();
 		for (BlockFace face : LandslidePlugin.horizontalFaces) {
 			Block sideBlock = getNeighbour(face);
-			if (!BlockInfo.isSolid(below.getRelative(face)) &&
+			if (!below.getRelative(face).getType().isSolid() &&
 					!isThickSnowLayer(below.getRelative(face)) &&
-					!BlockInfo.isSolid(sideBlock) &&
-					!BlockInfo.isSolid(above.getRelative(face)) &&
+					!sideBlock.getType().isSolid() &&
+					!above.getRelative(face).getType().isSolid() &&
 					!slideTo.contains(sideBlock.getLocation())) {
 				possibles.add(face);
 			}
@@ -339,7 +339,7 @@ public class SlideManager {
 			byte blockData = 0;
 			byte fbData = data;
 
-			if (b.getType() == Material.SNOW && BlockInfo.isSolid(b.getRelative(BlockFace.DOWN))) {
+			if (b.getType() == Material.SNOW && b.getRelative(BlockFace.DOWN).getType().isSolid()) {
 				// special case; snow can slide off in layers
 				fbData = 0; // single layer of snow slides
 				if (b.getData() > 0) {
@@ -355,7 +355,7 @@ public class SlideManager {
 				return null;
 			}
 
-			if (BlockInfo.isSolid(above)) {
+			if (above.getType().isSolid()) {
 				if (plugin.getRandom().nextInt(100) < plugin.getPerWorldConfig().getCliffStability(b.getWorld())) {
 					return null;
 				}

@@ -117,20 +117,20 @@ public class EventListener implements Listener {
 				if (fb.getMaterial() == Material.SNOW || fb.getMaterial() == Material.SNOW_BLOCK) {
 					// snow falling is nice and quiet!
 					fb.getWorld().playSound(fb.getLocation(), Sound.STEP_SNOW, 2.0f, 0.5f);
-				} else if (BlockInfo.isSolid(fb.getMaterial())) {
+				} else if (fb.getMaterial().isSolid()) {
 					fb.getWorld().playSound(fb.getLocation(), landingSounds[plugin.getRandom().nextInt(landingSounds.length)], 2.0f, 0.5f);
 				}
 			}
 		}
 
 		// See if the block we landed on can be dislodged; but only "heavy" (aka solid) falling blocks will dislodge blocks they land on
-		if (BlockInfo.isSolid(fb.getMaterial())) {
+		if (fb.getMaterial().isSolid()) {
 			checkForSlide(block.getRelative(BlockFace.DOWN));
 		}
 
 		// anything living standing in the way?
 		int dmg = plugin.getPerWorldConfig().getFallingBlockDamage(fb.getWorld());
-		if (dmg > 0 && BlockInfo.isSolid(fb.getMaterial())) {
+		if (dmg > 0 && fb.getMaterial().isSolid()) {
 			Location loc = block.getLocation();
 			for (Entity e : loc.getChunk().getEntities()) {
 				if (e instanceof LivingEntity) {
@@ -215,7 +215,7 @@ public class EventListener implements Listener {
 
 		// work out a good direction to bias the block flinging - try to send them towards open air
 		Block centreBlock = centre.getBlock();
-		if (!BlockInfo.isSolid(centreBlock)) {
+		if (!centreBlock.getType().isSolid()) {
 			centreBlock = findAdjacentSolid(centreBlock);
 			centre = centreBlock.getLocation();
 		}
@@ -223,7 +223,7 @@ public class EventListener implements Listener {
 		int n = 0;
 		for (BlockFace face : LandslidePlugin.allFaces) {
 			Block b1 = centreBlock.getRelative(face);
-			if (!BlockInfo.isSolid(b1)) {
+			if (!b1.getType().isSolid()) {
 				dirModifier.add(new Vector(face.getModX() * (plugin.getRandom().nextFloat() * 1.0 + 1.0),
 				                           face.getModY() * (plugin.getRandom().nextFloat() * 1.0 + 1.0),
 				                           face.getModZ() * (plugin.getRandom().nextFloat() * 1.0 + 1.0)));
@@ -348,7 +348,7 @@ public class EventListener implements Listener {
 	private Block findAdjacentSolid(Block b) {
 		for (BlockFace face : LandslidePlugin.allFaces) {
 			Block b1 = b.getRelative(face);
-			if (BlockInfo.isSolid(b1)) {
+			if (b1.getType().isSolid()) {
 				return b1;
 			}
 		}
