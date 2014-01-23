@@ -180,7 +180,9 @@ public class SlideManager {
 
 	/**
 	 * Check if a block would slide, given its position and neighbours.  Note that the
-	 * slidiness of the block's material has already been checked at this point.
+	 * slidiness of the block's material has already been checked at this point.  If the
+	 * block can drop down, then BlockFace.DOWN will be returned in preference to any
+	 * horizontal direction.
 	 *
 	 * @param block the block to check
 	 * @return the direction in which the block should slide, or null if it should not
@@ -359,7 +361,7 @@ public class SlideManager {
 				return null;
 			}
 
-			if (above.getType().isSolid()) {
+			if (above.getType().isSolid() && direction != BlockFace.DOWN) {
 				if (plugin.getRandom().nextInt(100) < plugin.getPerWorldConfig().getCliffStability(b.getWorld())) {
 					return null;
 				}
