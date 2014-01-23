@@ -20,10 +20,7 @@ along with Landslide.  If not, see <http://www.gnu.org/licenses/>.
 import me.desht.dhutils.LogUtils;
 import me.desht.dhutils.MiscUtil;
 
-import org.bukkit.Bukkit;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.Sound;
+import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Creeper;
@@ -109,7 +106,7 @@ public class EventListener implements Listener {
 		LogUtils.fine("falling block landed! " + fb.getMaterial() + " -> " + block);
 		if (checkForSlide(block, event.getTo(), event.getData(), true, plugin.getPerWorldConfig().getFallingBlocksBounce(fb.getWorld()))) {
 			// the block continues to slide - don't waste time forming a true block
-			// (checkForSlide() will create a new FallingBlock entity)
+			// (checkForSlide() will have already created a new FallingBlock entity)
 			event.setCancelled(true);
 		} else {
 			// the block has landed
@@ -369,21 +366,27 @@ public class EventListener implements Listener {
 	}
 
 	private boolean checkForSlide(Block block, Material mat, byte data, boolean immediate, boolean justLanded) {
-		int slideChance = plugin.getPerWorldConfig().getSlideChance(block.getWorld(), mat);
-		int dropChance = plugin.getPerWorldConfig().getDropChance(block.getWorld(), mat);
+		World world = block.getWorld();
+
+		int slideChance = plugin.getPerWorldConfig().getSlideChance(world, mat);
+		int dropChance = plugin.getPerWorldConfig().getDropChance(world, mat);
 		boolean orphan = plugin.isOrphan(block);
+		boolean weatherStopsSlide = plugin.getPerWorldConfig().getOnlyWhenRaining(world) && !world.hasStorm();
 
 		if ((slideChance > 0 || dropChance > 0) && orphan && plugin.getConfig().getBoolean("drop_slidy_floaters")) {
 			return plugin.getSlideManager().scheduleBlockSlide(block, BlockFace.DOWN, mat, data, true);
 		} else if (orphan && plugin.getConfig().getBoolean("drop_nonslidy_floaters")) {
 			return plugin.getSlideManager().scheduleBlockSlide(block, BlockFace.DOWN, mat, data, true);
 		}
-		if (slideChance > plugin.getRandom().nextInt(100) || justLanded && slideChance > 0) {
+		if (slideChance > plugin.getRandom().nextInt(100) && !weatherStopsSlide || justLanded && slideChance > 0) {
 			if (block.getType() == Material.SNOW) {
 				// special case; snow can slide off in layers, and the minimum thickness is configurable
-				if (block.getData() < plugin.getPerWorldConfig().getSnowSlideThickness(block.getWorld()) - 1) {
+				if (block.getData() < plugin.getPerWorldConfig().getSnowSlideThickness(world) - 1) {
 					return false;
 				}
+			}
+			if (plugin.getPerWorldConfig().getOnlyWhenRaining(world) && !world.hasStorm()) {
+				return false;
 			}
 			BlockFace face = plugin.getSlideManager().wouldSlide(block);
 			// sand/gravel/anvil dropping down will be handled by vanilla mechanics

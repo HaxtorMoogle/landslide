@@ -63,24 +63,36 @@ public class InfoCommand extends AbstractCommand {
 		PerWorldConfiguration pwc = lPlugin.getPerWorldConfig();
 		pager.add("Landslide information for world " + ChatColor.GOLD + ChatColor.BOLD + w.getName() + ":");
 		pager.add(BULLET + "Landslides are " + col((pwc.isEnabled(w) ? "enabled" : "disabled")));
+		pager.add(BULLET + "Landslides can occur " + col((pwc.getOnlyWhenRaining(w) ? "only when raining" : "in any weather")));
 		pager.add(BULLET + "Blocks may " + col((pwc.getHorizontalSlides(w) ? "slide horizontally off other blocks" : "only drop vertically")));
 		pager.add(BULLET + "Cliff stability is " + col(pwc.getCliffStability(w) + "%"));
 		pager.add(BULLET + "Falling blocks will " + col((pwc.getDropItems(w) ? "drop an item" : "be destroyed")) + " if they can't be placed");
-		pager.add(BULLET + "Falling blocks have a " + col(pwc.getExplodeEffectChance(w) + "%") + " chance to play an explosion effect on landing");
+		pager.add(BULLET + "Falling blocks have a " + col(pwc.getExplodeEffectChance(w) + "%") + " chance to play a sound effect on landing");
 		pager.add(BULLET + "Falling blocks will " + col((pwc.getFallingBlocksBounce(w) ? "bounce down slopes" : "always stop where they land")));
 		pager.add(BULLET + "Falling blocks will do " + col(pwc.getFallingBlockDamage(w)) + " damage to entities in the way");
+
 		pager.add(BULLET + "Snow must be " + col(pwc.getSnowSlideThickness(w)) + " layers thick before it will slide");
 		int check = plugin.getConfig().getInt("snow.check_interval");
 		pager.add(BULLET + "Snow accumulation/melting is " + col(check > 0 ? "checked every " + check + "s" : "not checked"));
-		pager.add(BULLET + "Snow has a " + col(pwc.getSnowFormChance(w) + "%") + " chance to accumulate when snowing");
-		pager.add(BULLET + "Snow has a " + col(pwc.getSnowMeltChance(w) + "%") + " chance to evaporate when sunny");
-		pager.add(BULLET + "Snow can " + col((!plugin.getConfig().getBoolean("snow.melt_away") ? "not " : "") + "melt away completely"));
+		if (check > 0) {
+			pager.add(BULLET + "Snow has a " + col(pwc.getSnowFormChance(w) + "%") + " chance to accumulate when snowing");
+			pager.add(BULLET + "Snow has a " + col(pwc.getSnowMeltChance(w) + "%") + " chance to evaporate when sunny");
+			pager.add(BULLET + "Snow can " + col((plugin.getConfig().getBoolean("snow.melt_away") ? "" : "not ") + "melt away completely in the sun"));
+		}
 
-		Map<String,Integer> slideChances = getSlideChances(plugin.getConfig(), w.getName());
+		Map<String,Integer> slideChances = getChances(plugin.getConfig(), w.getName(), "slide_chance");
 		if (!slideChances.isEmpty()) {
 			pager.add(BULLET + "Block slide chances:");
 			for (String mat : MiscUtil.asSortedList(slideChances.keySet())) {
 				pager.add("  " + BULLET + mat.toUpperCase() + ": " + col(slideChances.get(mat) + "%"));
+			}
+		}
+
+		Map<String,Integer> dropChances = getChances(plugin.getConfig(), w.getName(), "drop_chance");
+		if (!dropChances.isEmpty()) {
+			pager.add(BULLET + "Block drop chances:");
+			for (String mat : MiscUtil.asSortedList(dropChances.keySet())) {
+				pager.add("  " + BULLET + mat.toUpperCase() + ": " + col(dropChances.get(mat) + "%"));
 			}
 		}
 
@@ -105,9 +117,9 @@ public class InfoCommand extends AbstractCommand {
 		return ChatColor.YELLOW + Integer.toString(i) + ChatColor.RESET;
 	}
 
-	private Map<String, Integer> getSlideChances(Configuration config, String worldName) {
+	private Map<String, Integer> getChances(Configuration config, String worldName, String what) {
 		Map<String, Integer> res = new HashMap<String, Integer>();
-		ConfigurationSection cs = config.getConfigurationSection("slide_chance");
+		ConfigurationSection cs = config.getConfigurationSection(what);
 		if (cs != null) {
 			for (String k : cs.getKeys(false)) {
 				if (cs.getInt(k) > 0) {
@@ -116,7 +128,7 @@ public class InfoCommand extends AbstractCommand {
 			}
 		}
 
-		ConfigurationSection wcs = config.getConfigurationSection("worlds." + worldName + ".slide_chance");
+		ConfigurationSection wcs = config.getConfigurationSection("worlds." + worldName + "." + what);
 		if (wcs != null) {
 			for (String k : wcs.getKeys(false)) {
 				if (wcs.getInt(k) > 0) {

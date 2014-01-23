@@ -45,3 +45,4 @@ bracing_distance: 1
 sticky_pistons:
   retracted: true
   extended: true
+only_when_raining: false

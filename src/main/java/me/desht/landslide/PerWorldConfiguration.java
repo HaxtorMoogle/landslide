@@ -79,6 +79,8 @@ public class PerWorldConfiguration {
 			getWorldParams(worldName).setFallingBlocksBounce(conf.getBoolean(fullKey));
 		} else if (key.equals("horizontal_slides")) {
 			getWorldParams(worldName).setHorizontalSlides(conf.getBoolean(fullKey));
+		} else if (key.equals("only_when_raining")) {
+			getWorldParams(worldName).setOnlyWhenRaining(conf.getBoolean(fullKey));
 		} else if (key.equals("snow")) {
 			if (subKey.equals("form_chance")) {
 				getWorldParams(worldName).setSnowFormChance(conf.getInt(fullKey));
@@ -149,6 +151,10 @@ public class PerWorldConfiguration {
 		return getWorldParams(world.getName()).getSnowSlideThickness();
 	}
 
+	public boolean getOnlyWhenRaining(World world) {
+		return getWorldParams(world.getName()).getOnlyWhenRaining();
+	}
+
 	private class WorldParams {
 		private Integer cliffStability = null;
 		private Integer fallingBlockDamage = null;
@@ -163,6 +169,7 @@ public class PerWorldConfiguration {
 		private Integer snowMeltChance = null;
 		private Integer snowFormChance = null;
 		private Integer snowSlideThickness = null;
+		private Boolean onlyWhenRaining = null;
 
 		private WorldParams() {
 		}
@@ -180,6 +187,7 @@ public class PerWorldConfiguration {
 			if (snowFormChance == null) snowFormChance = 15;
 			if (snowMeltChance == null) snowMeltChance = 15;
 			if (snowSlideThickness == null) snowSlideThickness = 2;
+			if (onlyWhenRaining == null) onlyWhenRaining = false;
 		}
 
 		public boolean getHorizontalSlides() {
@@ -304,6 +312,14 @@ public class PerWorldConfiguration {
 
 		public void setSnowSlideThickness(int snowSlideThickness) {
 			this.snowSlideThickness = snowSlideThickness;
+		}
+
+		public boolean getOnlyWhenRaining() {
+			return onlyWhenRaining == null ? defaultWorld.getOnlyWhenRaining() : onlyWhenRaining;
+		}
+
+		public void setOnlyWhenRaining(boolean onlyWhenRaining) {
+			this.onlyWhenRaining = onlyWhenRaining;
 		}
 	}
 }
