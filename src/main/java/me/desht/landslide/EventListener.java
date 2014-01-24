@@ -17,20 +17,12 @@ You should have received a copy of the GNU General Public License
 along with Landslide.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import me.desht.dhutils.LogUtils;
+import me.desht.dhutils.Debugger;
 import me.desht.dhutils.MiscUtil;
-
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
-import org.bukkit.entity.Creeper;
-import org.bukkit.entity.EnderDragon;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.FallingBlock;
-import org.bukkit.entity.Item;
-import org.bukkit.entity.LivingEntity;
-import org.bukkit.entity.Player;
-import org.bukkit.entity.TNTPrimed;
+import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -43,6 +35,8 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
+
+import java.util.List;
 
 /**
  * Note that all listener methods run with EventPriority.HIGHEST, giving other plugins a chance
@@ -103,7 +97,7 @@ public class EventListener implements Listener {
 			handleSnowAccumulation(block, fb);
 		}
 
-		LogUtils.fine("falling block landed! " + fb.getMaterial() + " -> " + block);
+		Debugger.getInstance().debug("falling block landed! " + fb.getMaterial() + " -> " + block);
 		if (checkForSlide(block, event.getTo(), event.getData(), true, plugin.getPerWorldConfig().getFallingBlocksBounce(fb.getWorld()))) {
 			// the block continues to slide - don't waste time forming a true block
 			// (checkForSlide() will have already created a new FallingBlock entity)
@@ -187,8 +181,8 @@ public class EventListener implements Listener {
 		if (!plugin.getPerWorldConfig().isEnabled(event.getBlock().getWorld())) {
 			return;
 		}
+		Debugger.getInstance().debug(2, "Block physics: " + event.getBlock());
 		checkForSlide(event.getBlock());
-		checkForSlide(event.getBlock().getRelative(BlockFace.UP));
 	}
 
 	@EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
@@ -235,7 +229,7 @@ public class EventListener implements Listener {
 		final double forceMult = plugin.getConfig().getDouble("explosions.force_mult", 1.0);
 		final int yieldChance = plugin.getConfig().getInt("explosions.yield_chance", 50);
 
-		LogUtils.fine("explosion: cause = " + event.getEntity() + ", " + event.blockList().size() + " blocks affected, radius = " + distMax);
+		Debugger.getInstance().debug("explosion: cause = " + event.getEntity() + ", " + event.blockList().size() + " blocks affected, radius = " + distMax);
 		for (Block b : event.blockList()) {
 			if (!b.getType().isSolid()) {
 				// maybe some other plugin has already changed this block (e.g. CreeperHeal?)
@@ -367,9 +361,14 @@ public class EventListener implements Listener {
 
 	private boolean checkForSlide(Block block, Material mat, byte data, boolean immediate, boolean justLanded) {
 		World world = block.getWorld();
+		Debugger.getInstance().debug(2, "check for slide: " + block + " immediate=" + immediate + " justLanded=" + justLanded);
 
 		int slideChance = plugin.getPerWorldConfig().getSlideChance(world, mat);
 		int dropChance = plugin.getPerWorldConfig().getDropChance(world, mat);
+		int bounceChance = plugin.getConfig().getInt("bounce_chance");
+		if (justLanded && bounceChance <= plugin.getRandom().nextInt(100)) {
+			return false;
+		}
 		boolean orphan = plugin.isOrphan(block);
 		boolean weatherStopsSlide = plugin.getPerWorldConfig().getOnlyWhenRaining(world) && !world.hasStorm();
 

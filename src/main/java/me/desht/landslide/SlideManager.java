@@ -17,10 +17,12 @@ You should have received a copy of the GNU General Public License
 along with Landslide.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import java.util.*;
-
+import com.sk89q.worldguard.bukkit.WGBukkit;
+import com.sk89q.worldguard.protection.flags.DefaultFlag;
+import com.sk89q.worldguard.protection.flags.Flag;
+import com.sk89q.worldguard.protection.flags.StateFlag;
+import me.desht.dhutils.Debugger;
 import me.desht.dhutils.LogUtils;
-
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -30,10 +32,10 @@ import org.bukkit.material.PistonBaseMaterial;
 import org.bukkit.material.PistonExtensionMaterial;
 import org.bukkit.util.Vector;
 
-import com.sk89q.worldguard.bukkit.WGBukkit;
-import com.sk89q.worldguard.protection.flags.DefaultFlag;
-import com.sk89q.worldguard.protection.flags.Flag;
-import com.sk89q.worldguard.protection.flags.StateFlag;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 public class SlideManager {
 	private static final int RING_BUFFER_SIZE = 30;
@@ -82,7 +84,7 @@ public class SlideManager {
 		slideTo.clear();
 
 		if (slides[pointer].size() > 0) {
-			LogUtils.fine("pointer = " + pointer + " - " + slides[pointer].size() + " blocks to slide");
+			Debugger.getInstance().debug(2, "pointer = " + pointer + " - " + slides[pointer].size() + " blocks to slide");
 		}
 		for (ScheduledBlockMove slide : new ArrayList<ScheduledBlockMove>(slides[pointer])) {
 			slide.initiateMove();
@@ -97,6 +99,7 @@ public class SlideManager {
 	}
 
 	public boolean scheduleBlockSlide(Block block, BlockFace direction, Material mat, byte data, boolean immediate) {
+		Debugger.getInstance().debug(2, "Schedule slide: " + block + " dir=" + direction + " immediate=" + immediate);
 		if (totalSlidesScheduled >= getMaxSlidesTotal() || getMaxSlidesPerTick() <= 0) {
 			return false;
 		}
@@ -124,7 +127,7 @@ public class SlideManager {
 		Vector offset2 = offset.multiply(0.5);
 		Fling fling = new Fling(block.getLocation().add(offset), vec.add(offset2), block.getType(), block.getData());
 		if (scheduleOperation(fling, delay)) {
-			LogUtils.fine("scheduled fling: " + block.getLocation() + " -> " + vec);
+			Debugger.getInstance().debug("scheduled fling: " + block.getLocation() + " -> " + vec);
 			return true;
 		} else {
 			return false;
@@ -378,7 +381,7 @@ public class SlideManager {
 				double z = direction.getModZ() / 4.7;
 				fb.setVelocity(new Vector(x, direction == BlockFace.DOWN ? 0.0 : 0.15, z));
 			}
-			scheduleDrop(fb, (int)(Math.abs((fb.getVelocity().getX() + fb.getVelocity().getZ()) / 0.0354)));
+			scheduleDrop(fb, (int) (Math.abs((fb.getVelocity().getX() + fb.getVelocity().getZ()) / 0.0354)));
 			fb.setDropItem(plugin.getPerWorldConfig().getDropItems(b.getWorld()));
 			return fb;
 		}

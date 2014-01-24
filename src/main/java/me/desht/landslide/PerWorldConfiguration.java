@@ -3,6 +3,7 @@ package me.desht.landslide;
 import java.util.HashMap;
 import java.util.Map;
 
+import me.desht.dhutils.Debugger;
 import me.desht.dhutils.LogUtils;
 
 import org.bukkit.Material;
@@ -54,7 +55,7 @@ public class PerWorldConfiguration {
 			key = parts[0];
 			subKey = parts.length >= 2 ? parts[1] : null;
 		}
-		LogUtils.fine("process key [" + fullKey + "]: world=" + worldName + ", key=" + key + ", val=" + conf.get(fullKey));
+		Debugger.getInstance().debug("process key [" + fullKey + "]: world=" + worldName + ", key=" + key + ", val=" + conf.get(fullKey));
 		if (!conf.contains(fullKey)) {
 			// config key has been deleted; re-read everything and reconstruct the cached config
 			// this is not the most efficient way, but should be pretty safe

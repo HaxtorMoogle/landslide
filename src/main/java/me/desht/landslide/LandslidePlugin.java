@@ -85,6 +85,11 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 
 		MiscUtil.init(this);
 
+		Debugger.getInstance().setPrefix("[LSL] ");
+		if (getConfig().getInt("debug_level") > 0) {
+			Debugger.getInstance().setTarget(getServer().getConsoleSender());
+		}
+
 		setupWorldGuard();
 		setupProtocolLib();
 
@@ -167,7 +172,7 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 		Plugin plugin = getServer().getPluginManager().getPlugin("WorldGuard");
 
 		if (plugin != null && (plugin instanceof WorldGuardPlugin)) {
-			LogUtils.fine("WorldGuard detected");
+			Debugger.getInstance().debug("WorldGuard detected");
 			worldGuardPlugin =  (WorldGuardPlugin) plugin;
 		}
 	}
@@ -176,7 +181,7 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 		Plugin pLib = getServer().getPluginManager().getPlugin("ProtocolLib");
 		if (pLib != null && pLib instanceof ProtocolLibrary && pLib.isEnabled()) {
 			protocolLibEnabled = true;
-			LogUtils.fine("Hooked ProtocolLib v" + pLib.getDescription().getVersion());
+			Debugger.getInstance().debug("Hooked ProtocolLib v" + pLib.getDescription().getVersion());
 		}
 	}
 
@@ -267,13 +272,6 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 	}
 
 	public void processConfig() {
-		String level = getConfig().getString("log_level");
-		try {
-			LogUtils.setLogLevel(level);
-		} catch (IllegalArgumentException e) {
-			LogUtils.warning("invalid log level " + level + " - ignored");
-		}
-
 		MiscUtil.setColouredConsole(getConfig().getBoolean("coloured_console"));
 
 		slideManager.setMaxSlidesPerTick(getConfig().getInt("max_slides_per_tick", 20));
@@ -317,12 +315,6 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 		if (newVal != null && pctPat.matcher(key).find()) { // key.contains("slide_chance.")  || key.contains("cliff_stability") || key.contains("explode_effect_chance"))) {
 			int pct = (Integer) newVal;
 			DHValidate.isTrue(pct >= 0 && pct <= 100, "Value must be a percentage (0-100 inclusive)");
-		} else if (key.equals("log_level")) {
-			try {
-				Level.parse(newVal.toString().toUpperCase());
-			} catch (IllegalArgumentException e) {
-				throw new DHUtilsException(e.getMessage());
-			}
 		} else if (key.equals("bracing_materials")) {
 			for (String s : (List<String>) newVal) {
 				if (!s.startsWith("-") && Material.matchMaterial(s) == null) {
@@ -348,8 +340,14 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 			slideManager.setMaxSlidesPerTick((Integer) newVal);
 		} else if (key.equals("max_slides_total")) {
 			slideManager.setMaxSlidesTotal((Integer) newVal);
-		} else if (key.equals("log_level")) {
-			LogUtils.setLogLevel(newVal.toString());
+		} else if (key.equals("debug_level")) {
+			Debugger dbg = Debugger.getInstance();
+			dbg.setLevel((Integer) newVal);
+			if (dbg.getLevel() > 0) {
+				dbg.setTarget(getServer().getConsoleSender());
+			} else {
+				dbg.setTarget(null);
+			}
 		} else if (key.equals("coloured_console")) {
 			MiscUtil.setColouredConsole((Boolean) newVal);
 		} else if (key.equals("worldguard.enabled")) {

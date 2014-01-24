@@ -1,4 +1,3 @@
-log_level: info
 max_slides_per_tick: 10
 max_slides_total: 75
 pager:
@@ -46,3 +45,5 @@ sticky_pistons:
   retracted: true
   extended: true
 only_when_raining: false
+bounce_chance: 100
+debug_level: 0
