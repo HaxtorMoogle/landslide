@@ -220,7 +220,7 @@ public class SlideOTron {
 				if (bb.getType() == Material.AIR || bb.isLiquid()) {
 					if (n > 3 && n % 2 == 0) {
 						if (plugin.isProtocolLibEnabled()) {
-							ParticleEffect.WITCH_MAGIC.play(bb.getLocation(), 0.2f, 0.2f, 0.2f, 1.0f, 3);
+							ParticleEffect.WITCH_MAGIC.play(bb.getLocation(), 0.1f, 0.1f, 0.1f, 0f, 10);
 						} else {
 							bb.getWorld().playEffect(bb.getLocation(), Effect.SMOKE, 0);
 						}
