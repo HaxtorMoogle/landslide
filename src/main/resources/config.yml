@@ -39,8 +39,10 @@ snow:
   melt_away: false
   slide_thickness: 2
   smoothing: false
+  melt_light_level: 12
 bracing_materials: []
 bracing_distance: 1
+full_bracing_scan: false
 sticky_pistons:
   retracted: true
   extended: true

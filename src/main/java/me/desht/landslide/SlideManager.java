@@ -23,6 +23,7 @@ import com.sk89q.worldguard.protection.flags.Flag;
 import com.sk89q.worldguard.protection.flags.StateFlag;
 import me.desht.dhutils.Debugger;
 import me.desht.dhutils.LogUtils;
+import me.desht.dhutils.cuboid.Cuboid;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -58,11 +59,12 @@ public class SlideManager {
 	private boolean stickyPistonsRetracted;
 	private boolean stickyPistonsExtended;
 	private int bracingDistance;
+	private boolean fullBracingScan;
 
 	public interface ScheduledBlockMove {
+
 		public FallingBlock initiateMove();
 	}
-
 	@SuppressWarnings("unchecked")
 	public SlideManager(LandslidePlugin plugin) {
 		this.plugin = plugin;
@@ -181,19 +183,39 @@ public class SlideManager {
 		return false;
 	}
 
+	private boolean isBraced(Block block) {
+		if (bracingDistance <= 0) {
+			return false;
+		}
+		Cuboid c = new Cuboid(block.getLocation()).outset(Cuboid.CuboidDirection.Both, bracingDistance);
+		for (Block b : c) {
+			if (bracingMaterials.contains(b.getType())) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	public void setFullBracingScan(boolean fullScan) {
+		this.fullBracingScan = fullScan;
+	}
+
 	/**
-	 * Check if a block would slide, given its position and neighbours.  Note that the
-	 * slidiness of the block's material has already been checked at this point.  If the
-	 * block can drop down, then BlockFace.DOWN will be returned in preference to any
+	 * Check if a block would slide, given its position and neighbours.  The slidiness
+	 * of the block's material has already been checked at this point.  If the block
+	 * can drop down, then BlockFace.DOWN will be returned in preference to any
 	 * horizontal direction.
 	 *
 	 * @param block the block to check
 	 * @return the direction in which the block should slide, or null if it should not
 	 */
 	public BlockFace wouldSlide(Block block) {
+		if (fullBracingScan && isBraced(block)) {
+			return null;
+		}
 		for (BlockFace face : LandslidePlugin.allFaces) {
 			neighbours[face.ordinal()] = block.getRelative(face);
-			if (isBraced(block, face)) {
+			if (!fullBracingScan && isBraced(block, face)) {
 				return null;
 			} else if (getNeighbour(face).getType() == Material.PISTON_STICKY_BASE && stickyPistonsRetracted) {
 				PistonBaseMaterial pbm = (PistonBaseMaterial) getNeighbour(face).getState().getData();

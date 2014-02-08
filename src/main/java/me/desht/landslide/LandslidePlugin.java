@@ -86,6 +86,7 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 		MiscUtil.init(this);
 
 		Debugger.getInstance().setPrefix("[LSL] ");
+		Debugger.getInstance().setLevel(getConfig().getInt("debug_level"));
 		if (getConfig().getInt("debug_level") > 0) {
 			Debugger.getInstance().setTarget(getServer().getConsoleSender());
 		}
@@ -190,6 +191,7 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 		boolean snowSmoothing = getConfig().getBoolean("snow.smoothing");
 		boolean meltAway = getConfig().getBoolean("snow.melt_away");
 		boolean wgChecks = isWorldGuardAvailable() && getSlideManager().isWorldGuardEnabled();
+		int meltLightLevel = getConfig().getInt("snow.melt_light_level");
 
 		for (World w : Bukkit.getWorlds()) {
 			int limit = w.hasStorm() ? getPerWorldConfig().getSnowFormChance(w) : getPerWorldConfig().getSnowMeltChance(w);
@@ -204,10 +206,10 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 					int z = getRandom().nextInt(16);
 					Block block = w.getHighestBlockAt(c.getX() * 16 + x, c.getZ() * 16 + z);
 					Block below = block.getRelative(BlockFace.DOWN);
-					if (block.getTemperature() < 0.1 && (modifier > 0 || block.getLightLevel() > 12)) {
+					if (block.getTemperature() < 0.1 && (modifier > 0 || block.getLightLevel() > meltLightLevel)) {
 						if (wgChecks) {
 							StateFlag flag = modifier > 0 ? DefaultFlag.SNOW_FALL : DefaultFlag.SNOW_MELT;
-							if (!WGBukkit.getRegionManager(block.getWorld()).getApplicableRegions(block.getLocation()).allows(flag)) {
+							if (!WGBukkit.getRegionManager(w).getApplicableRegions(block.getLocation()).allows(flag)) {
 								continue;
 							}
 						}
@@ -286,6 +288,7 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 
 		slideManager.setBracingMaterials(getConfig().getStringList("bracing_materials"));
 		slideManager.setBracingDistance(getConfig().getInt("bracing_distance"));
+		slideManager.setFullBracingScan(getConfig().getBoolean("full_bracing_scan"));
 		slideManager.setStickyPistonsRetracted(getConfig().getBoolean("sticky_pistons.retracted"));
 		slideManager.setStickyPistonsExtended(getConfig().getBoolean("sticky_pistons.extended"));
 	}
@@ -361,6 +364,8 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 			slideManager.setBracingMaterials((List<String>) newVal);
 		} else if (key.equals("bracing_distance")) {
 			slideManager.setBracingDistance((Integer) newVal);
+		} else if (key.equals("full_bracing_scan")) {
+			slideManager.setFullBracingScan((Boolean) newVal);
 		} else if (key.equals("sticky_pistons.retracted")) {
 			slideManager.setStickyPistonsRetracted((Boolean) newVal);
 		} else if (key.equals("sticky_pistons.extended")) {
