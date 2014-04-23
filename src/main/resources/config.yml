@@ -35,7 +35,9 @@ transform:
 snow:
   check_interval: 0
   form_chance: 0
+  form_rate: 1
   melt_chance: 0
+  melt_rate: 1
   melt_away: false
   slide_thickness: 2
   smoothing: false
@@ -49,3 +51,4 @@ sticky_pistons:
 only_when_raining: false
 bounce_chance: 100
 debug_level: 0
+slide_into_liquid: true

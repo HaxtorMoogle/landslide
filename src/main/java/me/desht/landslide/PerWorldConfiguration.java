@@ -1,14 +1,12 @@
 package me.desht.landslide;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import me.desht.dhutils.Debugger;
-import me.desht.dhutils.LogUtils;
-
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.configuration.Configuration;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Cache the per-world parameters.  We cache the parameters here when the plugin starts or when
@@ -45,13 +43,14 @@ public class PerWorldConfiguration {
 
 	public void processKey(Configuration conf, String fullKey) {
 		String[] parts = fullKey.split("\\.");
-		String worldName = WORLD_DEFAULTS;
+		String worldName;
 		String key, subKey;
 		if (parts[0].equals("worlds")) {
 			worldName = parts[1];
 			key = parts[2];
 			subKey = parts.length >= 4 ? parts[3] : null;
 		} else {
+			worldName = WORLD_DEFAULTS;
 			key = parts[0];
 			subKey = parts.length >= 2 ? parts[1] : null;
 		}
@@ -82,11 +81,17 @@ public class PerWorldConfiguration {
 			getWorldParams(worldName).setHorizontalSlides(conf.getBoolean(fullKey));
 		} else if (key.equals("only_when_raining")) {
 			getWorldParams(worldName).setOnlyWhenRaining(conf.getBoolean(fullKey));
+		} else if (key.equals("slide_into_liquid")) {
+			getWorldParams(worldName).setSlideIntoLiquid(conf.getBoolean(fullKey));
 		} else if (key.equals("snow")) {
 			if (subKey.equals("form_chance")) {
 				getWorldParams(worldName).setSnowFormChance(conf.getInt(fullKey));
 			} else if (subKey.equals("melt_chance")) {
 				getWorldParams(worldName).setSnowMeltChance(conf.getInt(fullKey));
+			} else if (subKey.equals("form_rate")) {
+				getWorldParams(worldName).setSnowFormRate(conf.getInt(fullKey));
+			} else if (subKey.equals("melt_rate")) {
+				getWorldParams(worldName).setSnowMeltRate(conf.getInt(fullKey));
 			} else if (subKey.equals("slide_thickness")) {
 				getWorldParams(worldName).setSnowSlideThickness(conf.getInt(fullKey));
 			}
@@ -148,12 +153,24 @@ public class PerWorldConfiguration {
 		return getWorldParams(world.getName()).getSnowMeltChance();
 	}
 
+	public int getSnowFormRate(World world) {
+		return getWorldParams(world.getName()).getSnowFormRate();
+	}
+
+	public int getSnowMeltRate(World world) {
+		return getWorldParams(world.getName()).getSnowMeltRate();
+	}
+
 	public int getSnowSlideThickness(World world) {
 		return getWorldParams(world.getName()).getSnowSlideThickness();
 	}
 
 	public boolean getOnlyWhenRaining(World world) {
 		return getWorldParams(world.getName()).getOnlyWhenRaining();
+	}
+
+	public boolean getSlideIntoLiquid(World world) {
+		return getWorldParams(world.getName()).getSlideIntoLiquid();
 	}
 
 	private class WorldParams {
@@ -171,6 +188,9 @@ public class PerWorldConfiguration {
 		private Integer snowFormChance = null;
 		private Integer snowSlideThickness = null;
 		private Boolean onlyWhenRaining = null;
+		private Boolean slideIntoLiquid = null;
+		private Integer snowFormRate = null;
+		private Integer snowMeltRate = null;
 
 		private WorldParams() {
 		}
@@ -187,8 +207,11 @@ public class PerWorldConfiguration {
 			if (dropItems == null) dropItems = true;
 			if (snowFormChance == null) snowFormChance = 15;
 			if (snowMeltChance == null) snowMeltChance = 15;
+			if (snowFormRate == null) snowFormRate = 1;
+			if (snowMeltRate == null) snowMeltRate = 1;
 			if (snowSlideThickness == null) snowSlideThickness = 2;
 			if (onlyWhenRaining == null) onlyWhenRaining = false;
+			if (slideIntoLiquid == null) slideIntoLiquid = true;
 		}
 
 		public boolean getHorizontalSlides() {
@@ -321,6 +344,30 @@ public class PerWorldConfiguration {
 
 		public void setOnlyWhenRaining(boolean onlyWhenRaining) {
 			this.onlyWhenRaining = onlyWhenRaining;
+		}
+
+		public void setSlideIntoLiquid(boolean slideIntoLiquid) {
+			this.slideIntoLiquid = slideIntoLiquid;
+		}
+
+		public boolean getSlideIntoLiquid() {
+			return slideIntoLiquid == null ? defaultWorld.getSlideIntoLiquid() : slideIntoLiquid;
+		}
+
+		public void setSnowFormRate(int snowFormRate) {
+			this.snowFormRate = snowFormRate;
+		}
+
+		public int getSnowFormRate() {
+			return snowFormRate == null ? defaultWorld.getSnowFormRate() : snowFormRate;
+		}
+
+		public void setSnowMeltRate(int snowMeltRate) {
+			this.snowMeltRate = snowMeltRate;
+		}
+
+		public int getSnowMeltRate() {
+			return snowMeltRate == null ? defaultWorld.getSnowMeltRate() : snowMeltRate;
 		}
 	}
 }

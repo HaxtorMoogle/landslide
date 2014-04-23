@@ -65,6 +65,7 @@ public class InfoCommand extends AbstractCommand {
 		pager.add(BULLET + "Landslides are " + col((pwc.isEnabled(w) ? "enabled" : "disabled")));
 		pager.add(BULLET + "Landslides can occur " + col((pwc.getOnlyWhenRaining(w) ? "only when raining" : "in any weather")));
 		pager.add(BULLET + "Blocks may " + col((pwc.getHorizontalSlides(w) ? "slide horizontally off other blocks" : "only drop vertically")));
+		pager.add(BULLET + "Blocks " + col((pwc.getSlideIntoLiquid(w) ? "may" : "may not")) + " slide sideways into liquids");
 		pager.add(BULLET + "Cliff stability is " + col(pwc.getCliffStability(w) + "%"));
 		pager.add(BULLET + "Falling blocks will " + col((pwc.getDropItems(w) ? "drop an item" : "be destroyed")) + " if they can't be placed");
 		pager.add(BULLET + "Falling blocks have a " + col(pwc.getExplodeEffectChance(w) + "%") + " chance to play a sound effect on landing");
@@ -75,8 +76,11 @@ public class InfoCommand extends AbstractCommand {
 		int check = plugin.getConfig().getInt("snow.check_interval");
 		pager.add(BULLET + "Snow accumulation/melting is " + col(check > 0 ? "checked every " + check + "s" : "not checked"));
 		if (check > 0) {
-			pager.add(BULLET + "Snow has a " + col(pwc.getSnowFormChance(w) + "%") + " chance to accumulate when snowing");
-			pager.add(BULLET + "Snow has a " + col(pwc.getSnowMeltChance(w) + "%") + " chance to evaporate when sunny");
+			int fc = pwc.getSnowFormChance(w), mc = pwc.getSnowMeltChance(w);
+			int fr = pwc.getSnowFormRate(w), mr = pwc.getSnowMeltRate(w);
+			String sf = fr == 1 ? "" : "s", sm = mr == 1 ? "" : "s";
+			pager.add(BULLET + "Snow has a " + col(fc + "%") + " chance to accumulate by " + col(fr) + " layer" + sf + " when snowing");
+			pager.add(BULLET + "Snow has a " + col(mc + "%") + " chance to evaporate by " + col(mr) + " layer" + sm + " when sunny");
 			pager.add(BULLET + "Snow can " + col((plugin.getConfig().getBoolean("snow.melt_away") ? "" : "not ") + "melt away completely in the sun"));
 		}
 

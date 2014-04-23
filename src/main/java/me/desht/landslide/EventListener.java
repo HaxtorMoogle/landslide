@@ -26,6 +26,7 @@ import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockPhysicsEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
@@ -58,6 +59,14 @@ public class EventListener implements Listener {
 
 	public EventListener(LandslidePlugin plugin) {
 		this.plugin = plugin;
+	}
+
+	@EventHandler
+	public void foo(PlayerInteractEvent event) {
+		if (event.getAction() == Action.LEFT_CLICK_BLOCK && event.getItem().getType() == Material.STICK) {
+			Block b = event.getClickedBlock().getWorld().getHighestBlockAt(event.getClickedBlock().getX(), event.getClickedBlock().getZ());
+			System.out.println("block: " + b + ", down: " + b.getRelative(BlockFace.DOWN));
+		}
 	}
 
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)

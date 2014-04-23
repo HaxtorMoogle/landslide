@@ -17,25 +17,15 @@ package me.desht.landslide;
     along with Landslide.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import java.io.IOException;
-import java.util.List;
-import java.util.Random;
-import java.util.logging.Level;
-import java.util.regex.Pattern;
-
 import com.comphenix.protocol.ProtocolLibrary;
+import com.sk89q.worldguard.bukkit.WGBukkit;
+import com.sk89q.worldguard.bukkit.WorldGuardPlugin;
+import com.sk89q.worldguard.protection.flags.DefaultFlag;
+import com.sk89q.worldguard.protection.flags.Flag;
+import com.sk89q.worldguard.protection.flags.StateFlag;
 import me.desht.dhutils.*;
 import me.desht.dhutils.commands.CommandManager;
-import me.desht.landslide.commands.DeleteCfgCommand;
-import me.desht.landslide.commands.GetcfgCommand;
-import me.desht.landslide.commands.InfoCommand;
-import me.desht.landslide.commands.KaboomCommand;
-import me.desht.landslide.commands.PageCommand;
-import me.desht.landslide.commands.PowerCommand;
-import me.desht.landslide.commands.ReloadCommand;
-import me.desht.landslide.commands.SetcfgCommand;
-import me.desht.landslide.commands.WandCommand;
-
+import me.desht.landslide.commands.*;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Material;
@@ -50,11 +40,10 @@ import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.mcstats.MetricsLite;
 
-import com.sk89q.worldguard.bukkit.WGBukkit;
-import com.sk89q.worldguard.bukkit.WorldGuardPlugin;
-import com.sk89q.worldguard.protection.flags.DefaultFlag;
-import com.sk89q.worldguard.protection.flags.Flag;
-import com.sk89q.worldguard.protection.flags.StateFlag;
+import java.io.IOException;
+import java.util.List;
+import java.util.Random;
+import java.util.regex.Pattern;
 
 public class LandslidePlugin extends JavaPlugin implements Listener, ConfigurationListener {
 
@@ -74,6 +63,7 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 	private boolean protocolLibEnabled = false;
 
 	private static LandslidePlugin instance = null;
+	private SnowHandler snowHandler;
 
 	@Override
 	public void onEnable() {
@@ -104,6 +94,8 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 		cmds.registerCommand(new WandCommand());
 		cmds.registerCommand(new InfoCommand());
 
+		snowHandler = new SnowHandler(this);
+
 		processConfig();
 		perWorldConfig = new PerWorldConfiguration(this);
 
@@ -124,7 +116,7 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 			public void run() {
 				slideManager.tick();
 				if (snowInterval > 0 && ++ticks % snowInterval == 0) {
-					handleSnowAccumulation();
+					snowHandler.handleSnowAccumulation();
 				}
 			}
 		}, 1L, 1L);
@@ -186,69 +178,6 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 		}
 	}
 
-	private void handleSnowAccumulation() {
-		//		long now = System.nanoTime();
-		boolean snowSmoothing = getConfig().getBoolean("snow.smoothing");
-		boolean meltAway = getConfig().getBoolean("snow.melt_away");
-		boolean wgChecks = isWorldGuardAvailable() && getSlideManager().isWorldGuardEnabled();
-		int meltLightLevel = getConfig().getInt("snow.melt_light_level");
-
-		for (World w : Bukkit.getWorlds()) {
-			int limit = w.hasStorm() ? getPerWorldConfig().getSnowFormChance(w) : getPerWorldConfig().getSnowMeltChance(w);
-			if (limit <= 0) {
-				return;
-			}
-			limit = (256 * limit) / 100; // 256 blocks per chunk layer
-			int modifier = w.hasStorm() ? 1 : - 1;
-			for (Chunk c : w.getLoadedChunks()) {
-				for (int i = 0; i < limit; i++) {
-					int x = getRandom().nextInt(16);
-					int z = getRandom().nextInt(16);
-					Block block = w.getHighestBlockAt(c.getX() * 16 + x, c.getZ() * 16 + z);
-					Block below = block.getRelative(BlockFace.DOWN);
-					if (block.getTemperature() < 0.1 && (modifier > 0 || block.getLightLevel() > meltLightLevel)) {
-						if (wgChecks) {
-							StateFlag flag = modifier > 0 ? DefaultFlag.SNOW_FALL : DefaultFlag.SNOW_MELT;
-							if (!WGBukkit.getRegionManager(w).getApplicableRegions(block.getLocation()).allows(flag)) {
-								continue;
-							}
-						}
-						if (block.getType() == Material.SNOW) {
-							if (snowSmoothing) {
-								for (BlockFace face: horizontalFaces) {
-									Block neighbour = block.getRelative(face);
-									if (neighbour.getType() == Material.SNOW || neighbour.getType() == Material.AIR && neighbour.getRelative(BlockFace.DOWN).getType().isSolid()) {
-										if (modifier > 0 && block.getData() - neighbour.getData() >= 2) {
-											block = neighbour;
-											break;
-										} else if (modifier < 0 && block.getData() - neighbour.getData() <= -2) {
-											block = neighbour;
-											break;
-										}
-									}
-								}
-							}
-							int newData = block.getData() + modifier;
-							if (newData >= 7) {
-								block.setTypeIdAndData(Material.SNOW_BLOCK.getId(), (byte)0, true);
-							} else if (newData >= 0) {
-								block.setData((byte) newData);
-							} else if (meltAway || below.getType() == Material.SNOW_BLOCK) {
-								block.setTypeIdAndData(Material.AIR.getId(), (byte)0, true);
-							}
-						} else if (block.getType() == Material.SNOW_BLOCK && modifier < 0) {
-							block.setTypeIdAndData(Material.SNOW.getId(), (byte)6, true);
-						} else if (block.getType() == Material.AIR && modifier < 0 && below.getType() == Material.SNOW_BLOCK) {
-							below.setTypeIdAndData(Material.SNOW.getId(), (byte)6, true);
-						}
-					}
-				}
-			}
-		}
-		//		System.out.println("snow processed in " + (System.nanoTime() - now) + " ns");
-	}
-
-
 	public Random getRandom() {
 		return random;
 	}
@@ -291,6 +220,11 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 		slideManager.setFullBracingScan(getConfig().getBoolean("full_bracing_scan"));
 		slideManager.setStickyPistonsRetracted(getConfig().getBoolean("sticky_pistons.retracted"));
 		slideManager.setStickyPistonsExtended(getConfig().getBoolean("sticky_pistons.extended"));
+
+		snowHandler.setMeltAway(getConfig().getBoolean("snow.melt_away"));
+		snowHandler.setSnowSmoothing(getConfig().getBoolean("snow.smoothing"));
+		snowHandler.setWgChecks(isWorldGuardAvailable() && getSlideManager().isWorldGuardEnabled());
+		snowHandler.setMeltLightLevel(getConfig().getInt("snow.melt_light_level"));
 	}
 
 	public void validateWorldGuardFlag(String flagName) {
@@ -307,7 +241,7 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 		throw new DHUtilsException("Unknown WorldGuard flag " + flagName);
 	}
 
-	private static final Pattern pctPat = Pattern.compile("(slide_chance\\.|drop_chance\\.|cliff_stability|explode_effect_chance)");
+	private static final Pattern pctPat = Pattern.compile("(slide_chance\\.|drop_chance\\.|cliff_stability|explode_effect_chance|form_chance|melt_chance)");
 
 	@Override
 	public void onConfigurationValidate(ConfigurationManager configurationManager, String key, Object oldVal, Object newVal) {
@@ -319,6 +253,7 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 			int pct = (Integer) newVal;
 			DHValidate.isTrue(pct >= 0 && pct <= 100, "Value must be a percentage (0-100 inclusive)");
 		} else if (key.equals("bracing_materials")) {
+			//noinspection unchecked
 			for (String s : (List<String>) newVal) {
 				if (!s.startsWith("-") && Material.matchMaterial(s) == null) {
 					throw new DHUtilsException("Invalid material: " + s);
@@ -334,6 +269,9 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 			DHValidate.notNull(to, "Invalid material: " + s);
 		} else if (key.equals("worldguard.use_flag")) {
 			validateWorldGuardFlag((String) newVal);
+		} else if (key.endsWith("snow.form_rate") || key.endsWith("snow.melt_rate")) {
+			int v = (Integer) newVal;
+			DHValidate.isTrue(v >= 1 && v <= 7, "Value must be in range 1-7 inclusive");
 		}
 	}
 
@@ -361,6 +299,7 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 		} else if (key.equals("snow.check_interval")) {
 			snowInterval = (Integer) newVal * 20;
 		} else if (key.equals("bracing_materials")) {
+			//noinspection unchecked
 			slideManager.setBracingMaterials((List<String>) newVal);
 		} else if (key.equals("bracing_distance")) {
 			slideManager.setBracingDistance((Integer) newVal);

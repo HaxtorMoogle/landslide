@@ -213,6 +213,10 @@ public class SlideManager {
 		if (fullBracingScan && isBraced(block)) {
 			return null;
 		}
+		if (block.isLiquid() && block.getData() != 0) {
+			// flowing liquids may not slide
+			return null;
+		}
 		for (BlockFace face : LandslidePlugin.allFaces) {
 			neighbours[face.ordinal()] = block.getRelative(face);
 			if (!fullBracingScan && isBraced(block, face)) {
@@ -233,7 +237,7 @@ public class SlideManager {
 		}
 
 		Block below = getNeighbour(BlockFace.DOWN);
-		if (!below.getType().isSolid()) {
+		if (!below.getType().isSolid() && !bothLiquid(block, below)) {
 			return BlockFace.DOWN;
 		}
 		if (!plugin.getPerWorldConfig().getHorizontalSlides(block.getWorld())) {
@@ -245,9 +249,10 @@ public class SlideManager {
 			Block sideBlock = getNeighbour(face);
 			if (!below.getRelative(face).getType().isSolid() &&
 					!isThickSnowLayer(below.getRelative(face)) &&
-					!sideBlock.getType().isSolid() &&
+					canSlideSideways(sideBlock) &&
 					!above.getRelative(face).getType().isSolid() &&
-					!slideTo.contains(sideBlock.getLocation())) {
+					!slideTo.contains(sideBlock.getLocation()) &&
+					!bothLiquid(block, sideBlock)) {
 				possibles.add(face);
 			}
 		}
@@ -256,6 +261,14 @@ public class SlideManager {
 		case 1: return possibles.get(0);
 		default: return possibles.get(plugin.getRandom().nextInt(possibles.size()));
 		}
+	}
+
+	private boolean bothLiquid(Block block, Block block2) {
+		return block.isLiquid() && block2.isLiquid();
+	}
+
+	private boolean canSlideSideways(Block b) {
+		return plugin.getPerWorldConfig().getSlideIntoLiquid(b.getWorld()) ? !b.getType().isSolid() : b.isEmpty();
 	}
 
 	private Block getNeighbour(BlockFace direction) {
@@ -378,6 +391,21 @@ public class SlideManager {
 					blockData = (byte)(b.getData() - 1);
 					blockType = Material.SNOW.getId();
 				}
+			} else if (b.getType() == Material.STATIONARY_WATER || b.getType() == Material.WATER) {
+				System.out.println("water sliding! " + b);
+				// another special case: if a water block is about to slide, see if it's possible to fill
+				// in with a new source block instead of air
+				int n = 0;
+				for (BlockFace face : LandslidePlugin.horizontalFaces) {
+					if (b.getRelative(face).getType() == Material.STATIONARY_WATER) {
+						n++;
+						if (n >= 2) {
+							blockType = Material.STATIONARY_WATER.getId();
+							System.out.println("backfill sliding water with new source: " + b);
+							break;
+						}
+					}
+				}
 			}
 
 			Material fbMaterial = plugin.getPerWorldConfig().getTransform(b.getWorld(), blockMaterial);
@@ -404,7 +432,7 @@ public class SlideManager {
 				fb.setVelocity(new Vector(x, direction == BlockFace.DOWN ? 0.0 : 0.15, z));
 			}
 			scheduleDrop(fb, (int) (Math.abs((fb.getVelocity().getX() + fb.getVelocity().getZ()) / 0.0354)));
-			fb.setDropItem(plugin.getPerWorldConfig().getDropItems(b.getWorld()));
+			fb.setDropItem(!b.isLiquid() && plugin.getPerWorldConfig().getDropItems(b.getWorld()));
 			return fb;
 		}
 	}
