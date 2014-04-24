@@ -37,8 +37,6 @@ import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
 
-import java.util.List;
-
 /**
  * Note that all listener methods run with EventPriority.HIGHEST, giving other plugins a chance
  * to cancel the various events first.
@@ -103,10 +101,10 @@ public class EventListener implements Listener {
 			return;
 		}
 		if (block.getType() == Material.SNOW && (fb.getMaterial() == Material.SNOW || fb.getMaterial() == Material.SNOW_BLOCK)) {
-			handleSnowAccumulation(block, fb);
+			plugin.getSnowHandler().handleSnowAccumulation(block, fb);
 		}
 
-		Debugger.getInstance().debug("falling block landed! " + fb.getMaterial() + " -> " + block);
+		Debugger.getInstance().debug(2, "falling block landed! " + fb.getMaterial() + " -> " + block);
 		if (checkForSlide(block, event.getTo(), event.getData(), true, plugin.getPerWorldConfig().getFallingBlocksBounce(fb.getWorld()))) {
 			// the block continues to slide - don't waste time forming a true block
 			// (checkForSlide() will have already created a new FallingBlock entity)
@@ -311,38 +309,6 @@ public class EventListener implements Listener {
 		}
 		wand.setPower(wand.getPower() - delta);
 		player.setItemInHand(wand.toItemStack(player.getItemInHand().getAmount()));
-	}
-
-	/**
-	 * Handle the case where a snow layer or snow block falling block lands (and sucessfully forms a
-	 * new block) on an existing snow layer.
-	 *
-	 * @param block the snow layer block being landed on
-	 * @param fb the falling block, either snow layer or snow block
-	 */
-	private void handleSnowAccumulation(final Block block, FallingBlock fb) {
-		byte fbThickness = fb.getMaterial() == Material.SNOW ? fb.getBlockData() : 7;
-		final byte newThickness = (byte)(block.getData() + fbThickness + 1);
-		if (newThickness > 7) {
-			Bukkit.getScheduler().runTask(plugin, new Runnable() {
-				@Override
-				public void run() {
-					block.setTypeIdAndData(Material.SNOW_BLOCK.getId(), (byte) 0, true);
-					block.getRelative(BlockFace.UP).setTypeIdAndData(Material.SNOW.getId(), (byte)(newThickness - 8), true);
-				}
-			});
-		} else {
-			Bukkit.getScheduler().runTask(plugin, new Runnable() {
-				@Override
-				public void run() {
-					if (newThickness == 7) {
-						block.setTypeIdAndData(Material.SNOW_BLOCK.getId(), (byte) 0, true);
-					} else {
-						block.setData(newThickness, true);
-					}
-				}
-			});
-		}
 	}
 
 	private Block findAdjacentSolid(Block b) {

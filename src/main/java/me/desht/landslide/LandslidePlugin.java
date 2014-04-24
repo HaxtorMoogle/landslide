@@ -18,7 +18,6 @@ package me.desht.landslide;
  */
 
 import com.comphenix.protocol.ProtocolLibrary;
-import com.sk89q.worldguard.bukkit.WGBukkit;
 import com.sk89q.worldguard.bukkit.WorldGuardPlugin;
 import com.sk89q.worldguard.protection.flags.DefaultFlag;
 import com.sk89q.worldguard.protection.flags.Flag;
@@ -26,10 +25,7 @@ import com.sk89q.worldguard.protection.flags.StateFlag;
 import me.desht.dhutils.*;
 import me.desht.dhutils.commands.CommandManager;
 import me.desht.landslide.commands.*;
-import org.bukkit.Bukkit;
-import org.bukkit.Chunk;
 import org.bukkit.Material;
-import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.command.Command;
@@ -116,7 +112,7 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 			public void run() {
 				slideManager.tick();
 				if (snowInterval > 0 && ++ticks % snowInterval == 0) {
-					snowHandler.handleSnowAccumulation();
+					snowHandler.tick();
 				}
 			}
 		}, 1L, 1L);
@@ -249,7 +245,7 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 			throw new DHUtilsException("WorldGuard plugin is not enabled");
 		}
 
-		if (newVal != null && pctPat.matcher(key).find()) { // key.contains("slide_chance.")  || key.contains("cliff_stability") || key.contains("explode_effect_chance"))) {
+		if (newVal != null && pctPat.matcher(key).find()) {
 			int pct = (Integer) newVal;
 			DHValidate.isTrue(pct >= 0 && pct <= 100, "Value must be a percentage (0-100 inclusive)");
 		} else if (key.equals("bracing_materials")) {
@@ -294,6 +290,7 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 		} else if (key.equals("worldguard.enabled")) {
 			slideManager.setWorldGuardEnabled((Boolean) newVal);
 			slideManager.setWorldGuardFlag(getConfig().getString("worldguard.use_flag"));
+			snowHandler.setWgChecks((Boolean) newVal);
 		} else if (key.equals("worldguard.use_flag")) {
 			slideManager.setWorldGuardFlag((String) newVal);
 		} else if (key.equals("snow.check_interval")) {
@@ -309,6 +306,12 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 			slideManager.setStickyPistonsRetracted((Boolean) newVal);
 		} else if (key.equals("sticky_pistons.extended")) {
 			slideManager.setStickyPistonsExtended((Boolean) newVal);
+		} else if (key.equals("snow.melt_away")) {
+			snowHandler.setMeltAway((Boolean) newVal);
+		} else if (key.equals("snow.smoothing")) {
+			snowHandler.setSnowSmoothing((Boolean) newVal);
+		} else if (key.equals("snow.melt_light_level")) {
+			snowHandler.setMeltLightLevel((Integer) newVal);
 		} else {
 			getPerWorldConfig().processKey(getConfig(), key);
 		}
@@ -321,5 +324,9 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 			}
 		}
 		return true;
+	}
+
+	public SnowHandler getSnowHandler() {
+		return snowHandler;
 	}
 }

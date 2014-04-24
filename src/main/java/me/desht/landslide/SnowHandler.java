@@ -9,6 +9,7 @@ import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.entity.FallingBlock;
 import org.bukkit.scheduler.BukkitRunnable;
 
 public class SnowHandler {
@@ -38,7 +39,7 @@ public class SnowHandler {
 		this.wgChecks = wgChecks;
 	}
 
-	public void handleSnowAccumulation() {
+	public void tick() {
 		for (World w : Bukkit.getWorlds()) {
 			int limit = w.hasStorm() ? plugin.getPerWorldConfig().getSnowFormChance(w) : plugin.getPerWorldConfig().getSnowMeltChance(w);
 			if (limit <= 0) {
@@ -52,6 +53,32 @@ public class SnowHandler {
 
 			new ChunkProcessor(w, modifier, limit).runTaskTimer(plugin, 0L, 1L);
 		}
+	}
+
+	/**
+	 * Handle the case where a snow layer or snow block falling block lands (and sucessfully forms a
+	 * new block) on an existing snow layer.
+	 *
+	 * @param block the snow layer block being landed on
+	 * @param fb the falling block, either a snow layer or a snow block
+	 */
+	public void handleSnowAccumulation(final Block block, FallingBlock fb) {
+		int fbThickness = fb.getMaterial() == Material.SNOW ? fb.getBlockData() + 1 : 8;
+		final byte newThickness = (byte)(block.getData() + fbThickness);
+
+		Bukkit.getScheduler().runTask(plugin, new Runnable() {
+			@Override
+			public void run() {
+				if (newThickness > 7) {
+					block.setTypeIdAndData(Material.SNOW_BLOCK.getId(), (byte) 0, true);
+					block.getRelative(BlockFace.UP).setTypeIdAndData(Material.SNOW.getId(), (byte)(newThickness - 8), true);
+				} else if (newThickness == 7) {
+					block.setTypeIdAndData(Material.SNOW_BLOCK.getId(), (byte) 0, true);
+				} else {
+					block.setData(newThickness, true);
+				}
+			}
+		});
 	}
 
 	private void processOneChunk(World w, Chunk c, int modifier, int limit) {
