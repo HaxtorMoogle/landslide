@@ -354,7 +354,17 @@ public class SlideManager {
 		this.bracingDistance = bracingDistance;
 	}
 
-	private class Slide implements ScheduledBlockMove {
+    private boolean isLiquid(Material material) {
+        switch (material) {
+            case WATER: case STATIONARY_WATER:
+            case LAVA: case STATIONARY_LAVA:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    private class Slide implements ScheduledBlockMove {
 		private final Location loc;
 		private final Material blockMaterial;
 		private final byte data;
@@ -394,13 +404,11 @@ public class SlideManager {
 			} else if (b.getType() == Material.STATIONARY_WATER || b.getType() == Material.WATER) {
 				// another special case: if a water block is about to slide, see if it's possible to fill
 				// in with a new source block instead of air
-				int n = 0;
+				int nSourceBlocks = 0;
 				for (BlockFace face : LandslidePlugin.horizontalFaces) {
 					if (b.getRelative(face).getType() == Material.STATIONARY_WATER) {
-						n++;
-						if (n >= 2) {
+						if (++nSourceBlocks >= 2) {
 							blockType = Material.STATIONARY_WATER.getId();
-							System.out.println("backfill sliding water with new source: " + b);
 							break;
 						}
 					}
@@ -430,13 +438,13 @@ public class SlideManager {
 				double z = direction.getModZ() / 4.7;
 				fb.setVelocity(new Vector(x, direction == BlockFace.DOWN ? 0.0 : 0.15, z));
 			}
-			scheduleDrop(fb, (int) (Math.abs((fb.getVelocity().getX() + fb.getVelocity().getZ()) / 0.0354)));
-			fb.setDropItem(!b.isLiquid() && plugin.getPerWorldConfig().getDropItems(b.getWorld()));
-			return fb;
+            fb.setDropItem(!isLiquid(fb.getMaterial()) && plugin.getPerWorldConfig().getDropItems(b.getWorld()));
+            scheduleDrop(fb, (int) (Math.abs((fb.getVelocity().getX() + fb.getVelocity().getZ()) / 0.0354)));
+            return fb;
 		}
 	}
 
-	private class Fling implements ScheduledBlockMove {
+    private class Fling implements ScheduledBlockMove {
 		private final Location loc;
 		private final Vector vec;
 		private final Material blockType;
@@ -454,7 +462,7 @@ public class SlideManager {
 			loc.getBlock().setType(Material.AIR);
 			FallingBlock fb = loc.getWorld().spawnFallingBlock(loc, plugin.getPerWorldConfig().getTransform(loc.getWorld(), blockType), data);
 			fb.setVelocity(vec);
-			fb.setDropItem(plugin.getPerWorldConfig().getDropItems(loc.getWorld()));
+			fb.setDropItem(!isLiquid(fb.getMaterial()) && plugin.getPerWorldConfig().getDropItems(loc.getWorld()));
 			return fb;
 		}
 	}
