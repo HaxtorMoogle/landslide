@@ -392,7 +392,6 @@ public class SlideManager {
 					blockType = Material.SNOW.getId();
 				}
 			} else if (b.getType() == Material.STATIONARY_WATER || b.getType() == Material.WATER) {
-				System.out.println("water sliding! " + b);
 				// another special case: if a water block is about to slide, see if it's possible to fill
 				// in with a new source block instead of air
 				int n = 0;

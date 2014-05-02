@@ -59,14 +59,6 @@ public class EventListener implements Listener {
 		this.plugin = plugin;
 	}
 
-	@EventHandler
-	public void foo(PlayerInteractEvent event) {
-		if (event.getAction() == Action.LEFT_CLICK_BLOCK && event.getItem().getType() == Material.STICK) {
-			Block b = event.getClickedBlock().getWorld().getHighestBlockAt(event.getClickedBlock().getX(), event.getClickedBlock().getZ());
-			System.out.println("block: " + b + ", down: " + b.getRelative(BlockFace.DOWN));
-		}
-	}
-
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void onBlockPlace(BlockPlaceEvent event) {
 		if (!plugin.getPerWorldConfig().isEnabled(event.getBlock().getWorld())) {
