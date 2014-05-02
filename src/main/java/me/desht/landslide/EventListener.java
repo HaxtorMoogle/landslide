@@ -19,14 +19,16 @@ along with Landslide.  If not, see <http://www.gnu.org/licenses/>.
 
 import me.desht.dhutils.Debugger;
 import me.desht.dhutils.MiscUtil;
-import org.bukkit.*;
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.Sound;
+import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockPhysicsEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
@@ -36,6 +38,8 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
+
+import java.util.Random;
 
 /**
  * Note that all listener methods run with EventPriority.HIGHEST, giving other plugins a chance
@@ -197,10 +201,7 @@ public class EventListener implements Listener {
 
 		double distMax0 = 0.0;
 		for (Block b : event.blockList()) {
-			distMax0 = Math.max(distMax0, b.getLocation().distanceSquared(centre));
-		}
-		if (distMax0 == 0.0) {
-			return;
+            distMax0 = Math.max(distMax0, b.getLocation().distanceSquared(centre));
 		}
 
 		// work out a good direction to bias the block flinging - try to send them towards open air
@@ -209,24 +210,19 @@ public class EventListener implements Listener {
 			centreBlock = findAdjacentSolid(centreBlock);
 			centre = centreBlock.getLocation();
 		}
-		Vector dirModifier = new Vector(0.0, 0.0, 0.0);
-		int n = 0;
+        Random rnd = plugin.getRandom();
+		Vector dirModifier = new Vector(rnd.nextDouble() * 0.5, rnd.nextDouble() * 0.5, rnd.nextDouble() * 0.5);
 		for (BlockFace face : LandslidePlugin.allFaces) {
 			Block b1 = centreBlock.getRelative(face);
-			if (!b1.getType().isSolid()) {
-				dirModifier.add(new Vector(face.getModX() * (plugin.getRandom().nextFloat() * 1.0 + 1.0),
-				                           face.getModY() * (plugin.getRandom().nextFloat() * 1.0 + 1.0),
-				                           face.getModZ() * (plugin.getRandom().nextFloat() * 1.0 + 1.0)));
-				n++;
-			}
-		}
-		if (n > 1) {
-			dirModifier = dirModifier.multiply(1.0 / n);
+            if (!b1.getRelative(face).getType().isSolid() && b1.getRelative(face.getOppositeFace()).getType().isSolid()) {
+                dirModifier.add(new Vector(face.getModX(), face.getModY(), face.getModZ()));
+            }
 		}
 
 		final double distMax = Math.sqrt(distMax0);
 		final double forceMult = plugin.getConfig().getDouble("explosions.force_mult", 1.0);
 		final int yieldChance = plugin.getConfig().getInt("explosions.yield_chance", 50);
+        boolean primeTNT = plugin.getConfig().getBoolean("explosions.prime_tnt", true);
 
 		Debugger.getInstance().debug("explosion: cause = " + event.getEntity() + ", " + event.blockList().size() + " blocks affected, radius = " + distMax);
 		for (Block b : event.blockList()) {
@@ -234,13 +230,22 @@ public class EventListener implements Listener {
 				// maybe some other plugin has already changed this block (e.g. CreeperHeal?)
 				continue;
 			}
-			if (plugin.getRandom().nextInt(100) > yieldChance) {
+            if (b.getType() == Material.TNT && primeTNT) {
+                b.setType(Material.AIR);
+                Entity tnt = b.getWorld().spawn(b.getLocation(), TNTPrimed.class);
+                ((TNTPrimed)tnt).setFuseTicks(20);
+                continue;
+            }
+			if (rnd.nextInt(100) > yieldChance) {
 				b.setType(Material.AIR);
 				continue;
 			}
 			double xOff = b.getX() - centre.getBlockX();
 			double yOff = b.getY() - centre.getBlockY();
 			double zOff = b.getZ() - centre.getBlockZ();
+            if (xOff == 0 && yOff == 0 && zOff == 0) {
+                yOff = 0.1;  // can't have a zero vector here; it won't normalize properly
+            }
 			double dist = Math.sqrt(xOff * xOff + yOff * yOff + zOff * zOff);
 			double power = Math.abs(distMax - dist) / 3.0;
 			Vector vec = new Vector(xOff, yOff, zOff).normalize().multiply(forceMult * power);
@@ -261,7 +266,7 @@ public class EventListener implements Listener {
 			Vector vel = player.getLocation().getDirection().normalize().multiply(-5.0);
 			vel.setY(1.2);
 			player.setVelocity(vel);
-			player.damage(2);
+			player.damage(4);
 			MiscUtil.errorMessage(player, "The Slide-O-Tron\u2122 explodes in your face!");
 			player.setItemInHand(null);
 			return;

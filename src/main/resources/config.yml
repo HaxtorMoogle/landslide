@@ -11,6 +11,7 @@ fancy_explosions:
 explosions:
   force_mult: 1.0
   yield_chance: 50
+  prime_tnt: true
 drop_slidy_floaters: true
 drop_nonslidy_floaters: false
 worldguard:

@@ -126,8 +126,8 @@ public class SlideManager {
 
 	public boolean scheduleBlockFling(Block block, Vector vec, Vector offset) {
 		int delay =  plugin.getRandom().nextInt(MAX_SLIDE_DELAY);
-		Vector offset2 = offset.multiply(0.5);
-		Fling fling = new Fling(block.getLocation().add(offset), vec.add(offset2), block.getType(), block.getData());
+		Vector offset2 = offset.clone().multiply(0.5);
+		Fling fling = new Fling(block, block.getLocation().add(offset), vec.add(offset2), block.getType(), block.getData());
 		if (scheduleOperation(fling, delay)) {
 			Debugger.getInstance().debug("scheduled fling: " + block.getLocation() + " -> " + vec);
 			return true;
@@ -449,8 +449,10 @@ public class SlideManager {
 		private final Vector vec;
 		private final Material blockType;
 		private final byte data;
+        private final Block block;
 
-		private Fling(Location location, Vector vec, Material blockType, byte data) {
+        private Fling(Block block, Location location, Vector vec, Material blockType, byte data) {
+            this.block = block;
 			this.loc = location;
 			this.vec = vec;
 			this.blockType = blockType;
@@ -459,7 +461,7 @@ public class SlideManager {
 
 		@Override
 		public FallingBlock initiateMove() {
-			loc.getBlock().setType(Material.AIR);
+            block.setType(Material.AIR);
 			FallingBlock fb = loc.getWorld().spawnFallingBlock(loc, plugin.getPerWorldConfig().getTransform(loc.getWorld(), blockType), data);
 			fb.setVelocity(vec);
 			fb.setDropItem(!isLiquid(fb.getMaterial()) && plugin.getPerWorldConfig().getDropItems(loc.getWorld()));
