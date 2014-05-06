@@ -45,236 +45,240 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.util.BlockIterator;
 
 public class SlideOTron {
-	private static final String DISPLAY_PREFIX = ChatColor.YELLOW + "Slide-O-Tron\u2122: " + ChatColor.GOLD;
-	private static final String POWER_PREFIX = ChatColor.ITALIC.toString();
-	private static final Material WAND_MATERIAL = Material.BLAZE_ROD;
+    private static final String DISPLAY_PREFIX = ChatColor.YELLOW + "Slide-O-Tron\u2122: " + ChatColor.GOLD;
+    private static final String POWER_PREFIX = ChatColor.ITALIC.toString();
+    private static final Material WAND_MATERIAL = Material.BLAZE_ROD;
 
-	// for parsing data out of the item meta display name
-	private static final Pattern textPat = Pattern.compile(DISPLAY_PREFIX + "(.+?)" + POWER_PREFIX + " ([0-9]+)");
+    // for parsing data out of the item meta display name
+    private static final Pattern textPat = Pattern.compile(DISPLAY_PREFIX + "(.+?)" + POWER_PREFIX + " ([0-9]+)");
 
-	public enum Mode {
-		KABOOM ("Block Exploder"),
-		FORCE_SLIDE ("Slide Initiator");
+    public enum Mode {
+        KABOOM("Block Exploder"),
+        FORCE_SLIDE("Slide Initiator");
 
-		private static final Map<String, Mode> map = new HashMap<String, SlideOTron.Mode>();
-		static {
-			for (Mode m : values()) {
-				map.put(m.getText(), m);
-			}
-		}
-		private final String text;
+        private static final Map<String, Mode> map = new HashMap<String, SlideOTron.Mode>();
 
-		private Mode(String text) {
-			this.text = text;
-		}
+        static {
+            for (Mode m : values()) {
+                map.put(m.getText(), m);
+            }
+        }
 
-		public String getText() {
-			return text;
-		}
+        private final String text;
 
-		public Mode nextMode() {
-			int idx = (ordinal() + 1) % Mode.values().length;
-			return Mode.values()[idx];
-		}
+        private Mode(String text) {
+            this.text = text;
+        }
 
-		public static Mode getModeForText(String text) {
-			return map.get(text);
-		}
-	}
+        public String getText() {
+            return text;
+        }
 
-	private Mode mode;
-	private int power;
+        public Mode nextMode() {
+            int idx = (ordinal() + 1) % Mode.values().length;
+            return Mode.values()[idx];
+        }
 
-	private SlideOTron() {
-		mode = Mode.KABOOM;
-		power = 2;
-	}
+        public static Mode getModeForText(String text) {
+            return map.get(text);
+        }
+    }
 
-	private SlideOTron(ItemMeta meta) {
-		String s = meta.getDisplayName();
-		Matcher m = textPat.matcher(s);
-		if (m.find() && m.groupCount() == 2) {
-			mode = Mode.getModeForText(m.group(1));
-			if (mode == null) {
-				mode = Mode.KABOOM;
-			}
-			try {
-				this.power = Integer.parseInt(m.group(2));
-			} catch (NumberFormatException e) {
-				this.power = 2;
-			}
-		}
-	}
+    private Mode mode;
+    private int power;
 
-	public static void setupRecipe() {
-		ShapedRecipe recipe = new ShapedRecipe(new SlideOTron().toItemStack(1));
-		recipe.shape("ABC");
-		recipe.setIngredient('A', Material.ENDER_PEARL);
-		recipe.setIngredient('B', Material.BLAZE_ROD);
-		recipe.setIngredient('C', Material.TNT);
-		Bukkit.addRecipe(recipe);
-	}
+    private SlideOTron() {
+        mode = Mode.KABOOM;
+        power = 2;
+    }
 
-	/**
-	 * @return the mode
-	 */
-	public Mode getMode() {
-		return mode;
-	}
+    private SlideOTron(ItemMeta meta) {
+        String s = meta.getDisplayName();
+        Matcher m = textPat.matcher(s);
+        if (m.find() && m.groupCount() == 2) {
+            mode = Mode.getModeForText(m.group(1));
+            if (mode == null) {
+                mode = Mode.KABOOM;
+            }
+            try {
+                this.power = Integer.parseInt(m.group(2));
+            } catch (NumberFormatException e) {
+                this.power = 2;
+            }
+        }
+    }
 
-	/**
-	 * @param mode the mode to set
-	 */
-	public void setMode(Mode mode) {
-		this.mode = mode;
-	}
+    public static void setupRecipe() {
+        ShapedRecipe recipe = new ShapedRecipe(new SlideOTron().toItemStack(1));
+        recipe.shape("ABC");
+        recipe.setIngredient('A', Material.ENDER_PEARL);
+        recipe.setIngredient('B', Material.BLAZE_ROD);
+        recipe.setIngredient('C', Material.TNT);
+        Bukkit.addRecipe(recipe);
+    }
 
-	/**
-	 * @return the power
-	 */
-	public int getPower() {
-		return power;
-	}
+    /**
+     * @return the mode
+     */
+    public Mode getMode() {
+        return mode;
+    }
 
-	/**
-	 * @param power the power to set
-	 */
-	public void setPower(int power) {
-		this.power = Math.max(power, 0);
-	}
+    /**
+     * @param mode the mode to set
+     */
+    public void setMode(Mode mode) {
+        this.mode = mode;
+    }
 
-	/**
-	 * Get a wand item for this Slide-O-Tron.
-	 *
-	 * @return an ItemStack with the appropriate metadata set
-	 */
-	public ItemStack toItemStack(int quantity) {
-		ItemStack item = new ItemStack(WAND_MATERIAL, quantity);
-		ItemMeta meta = item.getItemMeta();
-		meta.setDisplayName(DISPLAY_PREFIX + mode.getText() + POWER_PREFIX + " " + power);
-		List<String> lore = new ArrayList<String>();
-		lore.add(ChatColor.GRAY + ChatColor.ITALIC.toString() + "Left-click: use wand");
-		lore.add(ChatColor.GRAY + ChatColor.ITALIC.toString() + "Right-click: change mode");
-		lore.add(ChatColor.GRAY + ChatColor.ITALIC.toString() + "Shift + Mouse-wheel: change power");
-		meta.setLore(lore);
-		item.setItemMeta(meta);
-		if (LandslidePlugin.getInstance().isProtocolLibEnabled()) {
-			ItemGlow.setGlowing(item, true);
-		}
-		return item;
-	}
+    /**
+     * @return the power
+     */
+    public int getPower() {
+        return power;
+    }
 
-	@Override
-	public String toString() {
-		return "Slide-O-Tron: mode=" + mode + " power=" + power;
-	}
+    /**
+     * @param power the power to set
+     */
+    public void setPower(int power) {
+        this.power = Math.max(power, 0);
+    }
 
-	public static ItemStack makeWand() {
-		return new SlideOTron().toItemStack(1);
-	}
+    /**
+     * Get a wand item for this Slide-O-Tron.
+     *
+     * @return an ItemStack with the appropriate metadata set
+     */
+    public ItemStack toItemStack(int quantity) {
+        ItemStack item = new ItemStack(WAND_MATERIAL, quantity);
+        ItemMeta meta = item.getItemMeta();
+        meta.setDisplayName(DISPLAY_PREFIX + mode.getText() + POWER_PREFIX + " " + power);
+        List<String> lore = new ArrayList<String>();
+        lore.add(ChatColor.GRAY + ChatColor.ITALIC.toString() + "Left-click: use wand");
+        lore.add(ChatColor.GRAY + ChatColor.ITALIC.toString() + "Right-click: change mode");
+        lore.add(ChatColor.GRAY + ChatColor.ITALIC.toString() + "Shift + Mouse-wheel: change power");
+        meta.setLore(lore);
+        item.setItemMeta(meta);
+        if (LandslidePlugin.getInstance().isProtocolLibEnabled()) {
+            ItemGlow.setGlowing(item, true);
+        }
+        return item;
+    }
 
-	/**
-	 * Get the Slide-O-Tron that the player is holding, if any.
-	 *
-	 * @param player the player to check
-	 * @return returns the Slide-O-Tron, or null if the player isn't holding one
-	 */
-	public static SlideOTron getWand(Player player) {
-		ItemStack item = player.getItemInHand();
-		if (item.getType() != WAND_MATERIAL) {
-			return null;
-		}
-		ItemMeta meta = item.getItemMeta();
-		if (meta.getDisplayName() == null || !meta.getDisplayName().startsWith(DISPLAY_PREFIX)) {
-			return null;
-		}
-		return new SlideOTron(meta);
-	}
+    @Override
+    public String toString() {
+        return "Slide-O-Tron: mode=" + mode + " power=" + power;
+    }
 
-	private static final HashSet<Byte> transparent = new HashSet<Byte>();
-	static {
-		transparent.add((byte)Material.STATIONARY_WATER.getId());
-		transparent.add((byte)Material.AIR.getId());
-	}
+    public static ItemStack makeWand() {
+        return new SlideOTron().toItemStack(1);
+    }
 
-	public void activate(LandslidePlugin plugin, Player player) {
-		Block b;
-		switch (mode) {
-		case KABOOM:
-			b = player.getTargetBlock(transparent, 140);
-			if (b != null && b.getY() != 0 && b.getType() != Material.AIR) {
-				player.getWorld().createExplosion(b.getLocation(), power);
-			} else {
-				player.playSound(player.getLocation(), Sound.NOTE_BASS, 1.0f, 1.0f);
-			}
-			break;
-		case FORCE_SLIDE:
-			BlockIterator iter = new BlockIterator(player, 140);
-			int n = 0;
-			while (iter.hasNext()) {
-				Block bb = iter.next();
-				if (bb.getType() == Material.BEDROCK || bb.getY() < 1 || bb.getY() > bb.getWorld().getMaxHeight()) {
-					player.playSound(player.getLocation(), Sound.NOTE_BASS, 1.0f, 1.0f);
-					break;
-				}
-				if (bb.getType() == Material.AIR || bb.isLiquid()) {
-					if (n > 3 && n % 2 == 0) {
-						if (plugin.isProtocolLibEnabled()) {
-							ParticleEffect.WITCH_MAGIC.play(bb.getLocation(), 0.1f, 0.1f, 0.1f, 0f, 10);
-						} else {
-							bb.getWorld().playEffect(bb.getLocation(), Effect.SMOKE, 0);
-						}
-					}
-				} else {
-					forceSlide(plugin, player, bb);
-					break;
-				}
-				n++;
-			}
-			break;
-		default:
-			break;
-		}
-	}
+    /**
+     * Get the Slide-O-Tron that the player is holding, if any.
+     *
+     * @param player the player to check
+     * @return returns the Slide-O-Tron, or null if the player isn't holding one
+     */
+    public static SlideOTron getWand(Player player) {
+        ItemStack item = player.getItemInHand();
+        if (item.getType() != WAND_MATERIAL) {
+            return null;
+        }
+        ItemMeta meta = item.getItemMeta();
+        if (meta.getDisplayName() == null || !meta.getDisplayName().startsWith(DISPLAY_PREFIX)) {
+            return null;
+        }
+        return new SlideOTron(meta);
+    }
 
-	private void forceSlide(LandslidePlugin plugin, Player player, Block b) {
-		int size = Math.min(power, 20);
-		int n = 0;
+    private static final HashSet<Byte> transparent = new HashSet<Byte>();
 
-		Cuboid c = new Cuboid(b.getLocation());
-		for (int s = 0; s <= size; s++) {
-			if (s == 0) {
-				// degenerate case
-				BlockFace face = plugin.getSlideManager().wouldSlide(b);
-				if (face != null) {
-					plugin.getSlideManager().scheduleBlockSlide(b, face);
-					n++;
-				}
-			} else {
-				n += forceSlide(plugin, b.getType(), c.getFace(CuboidDirection.Down));
-				n += forceSlide(plugin, b.getType(), c.getFace(CuboidDirection.North).inset(CuboidDirection.Vertical, 1));
-				n += forceSlide(plugin, b.getType(), c.getFace(CuboidDirection.South).inset(CuboidDirection.Vertical, 1));
-				n += forceSlide(plugin, b.getType(), c.getFace(CuboidDirection.East).inset(CuboidDirection.Vertical, 1));
-				n += forceSlide(plugin, b.getType(), c.getFace(CuboidDirection.West).inset(CuboidDirection.Vertical, 1));
-				n += forceSlide(plugin, b.getType(), c.getFace(CuboidDirection.Up));
-			}
-			c = c.outset(CuboidDirection.Both, 1);
-		}
-		String s = n == 1 ? "" : "s";
-		MiscUtil.statusMessage(player, "Scheduled " + n + " block" + s + " to slide");
-	}
+    static {
+        transparent.add((byte) Material.STATIONARY_WATER.getId());
+        transparent.add((byte) Material.AIR.getId());
+    }
 
-	private int forceSlide(LandslidePlugin plugin, Material mat, Cuboid c) {
-		int n = 0;
-		for (Block b : c) {
-			if (b.getType() == mat) {
-				BlockFace face = plugin.getSlideManager().wouldSlide(b);
-				if (face != null) {
-					plugin.getSlideManager().scheduleBlockSlide(b, face);
-					n++;
-				}
-			}
-		}
-		return n;
-	}
+    public void activate(LandslidePlugin plugin, Player player) {
+        Block b;
+        switch (mode) {
+            case KABOOM:
+                b = player.getTargetBlock(transparent, 140);
+                if (b != null && b.getY() != 0 && b.getType() != Material.AIR) {
+                    player.getWorld().createExplosion(b.getLocation(), power);
+                } else {
+                    player.playSound(player.getLocation(), Sound.NOTE_BASS, 1.0f, 1.0f);
+                }
+                break;
+            case FORCE_SLIDE:
+                BlockIterator iter = new BlockIterator(player, 140);
+                int n = 0;
+                while (iter.hasNext()) {
+                    Block bb = iter.next();
+                    if (bb.getType() == Material.BEDROCK || bb.getY() < 1 || bb.getY() > bb.getWorld().getMaxHeight()) {
+                        player.playSound(player.getLocation(), Sound.NOTE_BASS, 1.0f, 1.0f);
+                        break;
+                    }
+                    if (bb.getType() == Material.AIR || bb.isLiquid()) {
+                        if (n > 3 && n % 2 == 0) {
+                            if (plugin.isProtocolLibEnabled()) {
+                                ParticleEffect.WITCH_MAGIC.play(bb.getLocation(), 0.1f, 0.1f, 0.1f, 0f, 10);
+                            } else {
+                                bb.getWorld().playEffect(bb.getLocation(), Effect.SMOKE, 0);
+                            }
+                        }
+                    } else {
+                        forceSlide(plugin, player, bb);
+                        break;
+                    }
+                    n++;
+                }
+                break;
+            default:
+                break;
+        }
+    }
+
+    private void forceSlide(LandslidePlugin plugin, Player player, Block b) {
+        int size = Math.min(power, 20);
+        int n = 0;
+
+        Cuboid c = new Cuboid(b.getLocation());
+        for (int s = 0; s <= size; s++) {
+            if (s == 0) {
+                // degenerate case
+                BlockFace face = plugin.getSlideManager().wouldSlide(b);
+                if (face != null) {
+                    plugin.getSlideManager().scheduleBlockSlide(b, face);
+                    n++;
+                }
+            } else {
+                n += forceSlide(plugin, b.getType(), c.getFace(CuboidDirection.Down));
+                n += forceSlide(plugin, b.getType(), c.getFace(CuboidDirection.North).inset(CuboidDirection.Vertical, 1));
+                n += forceSlide(plugin, b.getType(), c.getFace(CuboidDirection.South).inset(CuboidDirection.Vertical, 1));
+                n += forceSlide(plugin, b.getType(), c.getFace(CuboidDirection.East).inset(CuboidDirection.Vertical, 1));
+                n += forceSlide(plugin, b.getType(), c.getFace(CuboidDirection.West).inset(CuboidDirection.Vertical, 1));
+                n += forceSlide(plugin, b.getType(), c.getFace(CuboidDirection.Up));
+            }
+            c = c.outset(CuboidDirection.Both, 1);
+        }
+        String s = n == 1 ? "" : "s";
+        MiscUtil.statusMessage(player, "Scheduled " + n + " block" + s + " to slide");
+    }
+
+    private int forceSlide(LandslidePlugin plugin, Material mat, Cuboid c) {
+        int n = 0;
+        for (Block b : c) {
+            if (b.getType() == mat) {
+                BlockFace face = plugin.getSlideManager().wouldSlide(b);
+                if (face != null) {
+                    if (plugin.getSlideManager().scheduleBlockSlide(b, face)) {
+                        n++;
+                    }
+                }
+            }
+        }
+        return n;
+    }
 }

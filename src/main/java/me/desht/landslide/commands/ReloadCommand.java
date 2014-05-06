@@ -26,20 +26,20 @@ import me.desht.landslide.LandslidePlugin;
 
 public class ReloadCommand extends AbstractCommand {
 
-	public ReloadCommand() {
-		super("landslide reload");
-		setUsage("/<command> reload");
-		setPermissionNode("landslide.commands.reload");
-	}
+    public ReloadCommand() {
+        super("landslide reload");
+        setUsage("/<command> reload");
+        setPermissionNode("landslide.commands.reload");
+    }
 
-	@Override
-	public boolean execute(Plugin plugin, CommandSender sender, String[] args) {
-		LandslidePlugin lPlugin = (LandslidePlugin) plugin;
-		lPlugin.reloadConfig();
-		lPlugin.processConfig();
-		lPlugin.getPerWorldConfig().processConfig();
-		MiscUtil.statusMessage(sender, "The plugin configuration has been reloaded.");
-		return true;
-	}
+    @Override
+    public boolean execute(Plugin plugin, CommandSender sender, String[] args) {
+        LandslidePlugin lPlugin = (LandslidePlugin) plugin;
+        lPlugin.reloadConfig();
+        lPlugin.processConfig();
+        lPlugin.getPerWorldConfig().processConfig();
+        MiscUtil.statusMessage(sender, "The plugin configuration has been reloaded.");
+        return true;
+    }
 
 }
