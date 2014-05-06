@@ -160,18 +160,18 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 	private void setupWorldGuard() {
 		Plugin plugin = getServer().getPluginManager().getPlugin("WorldGuard");
 
-		if (plugin != null && (plugin instanceof WorldGuardPlugin)) {
-			Debugger.getInstance().debug("WorldGuard detected");
+		if (plugin != null && plugin.isEnabled() && plugin instanceof WorldGuardPlugin) {
+			Debugger.getInstance().debug("Hooked WorldGuard v" + plugin.getDescription().getVersion());
 			worldGuardPlugin =  (WorldGuardPlugin) plugin;
 		}
 	}
 
 	private void setupProtocolLib() {
 		Plugin pLib = getServer().getPluginManager().getPlugin("ProtocolLib");
-		if (pLib != null && pLib instanceof ProtocolLibrary && pLib.isEnabled()) {
-			protocolLibEnabled = true;
+		if (pLib != null && pLib.isEnabled() && pLib instanceof ProtocolLibrary) {
 			Debugger.getInstance().debug("Hooked ProtocolLib v" + pLib.getDescription().getVersion());
-		}
+            protocolLibEnabled = true;
+        }
 	}
 
 	public Random getRandom() {
