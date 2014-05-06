@@ -41,7 +41,7 @@ import java.util.Set;
 
 public class SlideManager {
 	private static final int RING_BUFFER_SIZE = 30;
-	private static final int MAX_SLIDE_DELAY = 20;
+	private static final int MAX_SLIDE_DELAY = 12;
 
 	private static final Block[] neighbours = new Block[BlockFace.values().length];
 
