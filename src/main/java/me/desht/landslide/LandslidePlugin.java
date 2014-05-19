@@ -216,6 +216,7 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
         slideManager.setFullBracingScan(getConfig().getBoolean("full_bracing_scan"));
         slideManager.setStickyPistonsRetracted(getConfig().getBoolean("sticky_pistons.retracted"));
         slideManager.setStickyPistonsExtended(getConfig().getBoolean("sticky_pistons.extended"));
+        SlideManager.setNonVanilla(getConfig().getBoolean("non_vanilla"));
 
         snowHandler.setMeltAway(getConfig().getBoolean("snow.melt_away"));
         snowHandler.setSnowSmoothing(getConfig().getBoolean("snow.smoothing"));
@@ -312,6 +313,8 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
             snowHandler.setSnowSmoothing((Boolean) newVal);
         } else if (key.equals("snow.melt_light_level")) {
             snowHandler.setMeltLightLevel((Integer) newVal);
+        } else if (key.equals("non_vanilla")) {
+            SlideManager.setNonVanilla((Boolean) newVal);
         } else {
             getPerWorldConfig().processKey(getConfig(), key);
         }
@@ -319,7 +322,7 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
 
     public boolean isOrphan(Block block) {
         for (BlockFace f : LandslidePlugin.allFaces) {
-            if (block.getRelative(f).getType().isSolid()) {
+            if (SlideManager.isSolid(block.getRelative(f).getType())) {
                 return false;
             }
         }

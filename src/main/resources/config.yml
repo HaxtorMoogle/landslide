@@ -53,3 +53,4 @@ only_when_raining: false
 bounce_chance: 100
 debug_level: 0
 slide_into_liquid: true
+non_vanilla: false

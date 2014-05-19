@@ -61,12 +61,13 @@ public class SlideManager {
     private boolean stickyPistonsExtended;
     private int bracingDistance;
     private boolean fullBracingScan;
+    private static boolean nonVanilla;
 
     public interface ScheduledBlockMove {
 
         public FallingBlock initiateMove();
-    }
 
+    }
     @SuppressWarnings("unchecked")
     public SlideManager(LandslidePlugin plugin) {
         this.plugin = plugin;
@@ -244,7 +245,7 @@ public class SlideManager {
         }
 
         Block below = getNeighbour(BlockFace.DOWN);
-        if (!below.getType().isSolid() && !bothLiquid(block, below)) {
+        if (!isSolid(below.getType()) && !bothLiquid(block, below)) {
             return BlockFace.DOWN;
         }
         if (!plugin.getPerWorldConfig().getHorizontalSlides(block.getWorld())) {
@@ -254,10 +255,10 @@ public class SlideManager {
         List<BlockFace> possibles = new ArrayList<BlockFace>();
         for (BlockFace face : LandslidePlugin.horizontalFaces) {
             Block sideBlock = getNeighbour(face);
-            if (!below.getRelative(face).getType().isSolid() &&
+            if (!isSolid(below.getRelative(face).getType()) &&
                     !isThickSnowLayer(below.getRelative(face)) &&
                     canSlideSideways(sideBlock) &&
-                    !above.getRelative(face).getType().isSolid() &&
+                    !isSolid(above.getRelative(face).getType()) &&
                     !slideTo.contains(sideBlock.getLocation()) &&
                     !bothLiquid(block, sideBlock)) {
                 possibles.add(face);
@@ -278,7 +279,7 @@ public class SlideManager {
     }
 
     private boolean canSlideSideways(Block b) {
-        return plugin.getPerWorldConfig().getSlideIntoLiquid(b.getWorld()) ? !b.getType().isSolid() : b.isEmpty();
+        return plugin.getPerWorldConfig().getSlideIntoLiquid(b.getWorld()) ? !isSolid(b.getType()) : b.isEmpty();
     }
 
     private Block getNeighbour(BlockFace direction) {
@@ -376,6 +377,17 @@ public class SlideManager {
         }
     }
 
+    public static void setNonVanilla(boolean nonVanilla) {
+        SlideManager.nonVanilla = nonVanilla;
+    }
+
+    public static boolean isSolid(Material material) {
+        // account for possible non-vanilla blocks - we just treat anything
+        // that isn't a vanilla block as solid
+        // 175 is the highest vanilla block ID for 1.7.x
+        return material.isSolid() || (nonVanilla && material.getId() > 175);
+    }
+
     private class Slide implements ScheduledBlockMove {
         private final Location loc;
         private final Material blockMaterial;
@@ -405,7 +417,7 @@ public class SlideManager {
             byte blockData = 0;
             byte fbData = data;
 
-            if (b.getType() == Material.SNOW && b.getRelative(BlockFace.DOWN).getType().isSolid()) {
+            if (b.getType() == Material.SNOW && isSolid(b.getRelative(BlockFace.DOWN).getType())) {
                 // special case; snow can slide off in layers
                 fbData = 0; // single layer of snow slides
                 if (b.getData() > 0) {
@@ -433,7 +445,7 @@ public class SlideManager {
                 return null;
             }
 
-            if (above.getType().isSolid() && direction != BlockFace.DOWN) {
+            if (isSolid(above.getType()) && direction != BlockFace.DOWN) {
                 if (plugin.getRandom().nextInt(100) < plugin.getPerWorldConfig().getCliffStability(b.getWorld())) {
                     return null;
                 }

@@ -98,7 +98,7 @@ public class SnowHandler {
                     if (snowSmoothing) {
                         for (BlockFace face : LandslidePlugin.horizontalFaces) {
                             Block neighbour = block.getRelative(face);
-                            if (neighbour.getType() == Material.SNOW || neighbour.getType() == Material.AIR && neighbour.getRelative(BlockFace.DOWN).getType().isSolid()) {
+                            if (neighbour.getType() == Material.SNOW || neighbour.getType() == Material.AIR && SlideManager.isSolid(neighbour.getRelative(BlockFace.DOWN).getType())) {
                                 int diff = getSnowThicknessDifference(block, neighbour);
                                 if (modifier > 0 && diff > 0) {
                                     block = neighbour;

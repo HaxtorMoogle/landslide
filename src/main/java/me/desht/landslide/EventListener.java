@@ -87,7 +87,14 @@ public class EventListener implements Listener {
             // looks like a block starting to fall - we don't care about that here
             return;
         }
-
+        if (!block.getType().isBlock()) {
+            // looks like a non-vanilla block (are we running MCPC+ maybe?)
+            event.setCancelled(true);
+            if (plugin.getPerWorldConfig().getDropItems(block.getWorld())) {
+                block.getWorld().dropItemNaturally(block.getLocation(), new ItemStack(fb.getMaterial(), 1, fb.getBlockData()));
+            }
+            return;
+        }
         if (block.getType() == Material.AIR && block.getRelative(BlockFace.DOWN).getType() == Material.SNOW) {
             // trying to land on a thick snow layer - doesn't work well, so just drop an item
             event.setCancelled(true);
@@ -111,20 +118,20 @@ public class EventListener implements Listener {
                 if (fb.getMaterial() == Material.SNOW || fb.getMaterial() == Material.SNOW_BLOCK) {
                     // snow falling is nice and quiet!
                     fb.getWorld().playSound(fb.getLocation(), Sound.STEP_SNOW, 2.0f, 0.5f);
-                } else if (fb.getMaterial().isSolid()) {
+                } else if (SlideManager.isSolid(fb.getMaterial())) {
                     fb.getWorld().playSound(fb.getLocation(), landingSounds[plugin.getRandom().nextInt(landingSounds.length)], 2.0f, 0.5f);
                 }
             }
         }
 
         // See if the block we landed on can be dislodged; but only "heavy" (aka solid) falling blocks will dislodge blocks they land on
-        if (fb.getMaterial().isSolid()) {
+        if (SlideManager.isSolid(fb.getMaterial())) {
             checkForSlide(block.getRelative(BlockFace.DOWN));
         }
 
         // anything living standing in the way?
         int dmg = plugin.getPerWorldConfig().getFallingBlockDamage(fb.getWorld());
-        if (dmg > 0 && fb.getMaterial().isSolid()) {
+        if (dmg > 0 && SlideManager.isSolid(fb.getMaterial())) {
             Location loc = block.getLocation();
             for (Entity e : loc.getChunk().getEntities()) {
                 if (e instanceof LivingEntity) {
@@ -206,7 +213,7 @@ public class EventListener implements Listener {
 
         // work out a good direction to bias the block flinging - try to send them towards open air
         Block centreBlock = centre.getBlock();
-        if (!centreBlock.getType().isSolid()) {
+        if (!SlideManager.isSolid(centreBlock.getType())) {
             centreBlock = findAdjacentSolid(centreBlock);
             centre = centreBlock.getLocation();
         }
@@ -214,7 +221,7 @@ public class EventListener implements Listener {
         Vector dirModifier = new Vector(rnd.nextDouble() * 0.5, rnd.nextDouble() * 0.5, rnd.nextDouble() * 0.5);
         for (BlockFace face : LandslidePlugin.allFaces) {
             Block b1 = centreBlock.getRelative(face);
-            if (!b1.getRelative(face).getType().isSolid() && b1.getRelative(face.getOppositeFace()).getType().isSolid()) {
+            if (!SlideManager.isSolid(b1.getRelative(face).getType()) && SlideManager.isSolid(b1.getRelative(face.getOppositeFace()).getType())) {
                 dirModifier.add(new Vector(face.getModX(), face.getModY(), face.getModZ()));
             }
         }
@@ -226,7 +233,7 @@ public class EventListener implements Listener {
 
         Debugger.getInstance().debug("explosion: cause = " + event.getEntity() + ", " + event.blockList().size() + " blocks affected, radius = " + distMax);
         for (Block b : event.blockList()) {
-            if (!b.getType().isSolid()) {
+            if (!SlideManager.isSolid(b.getType())) {
                 // maybe some other plugin has already changed this block (e.g. CreeperHeal?)
                 continue;
             }
@@ -313,7 +320,7 @@ public class EventListener implements Listener {
     private Block findAdjacentSolid(Block b) {
         for (BlockFace face : LandslidePlugin.allFaces) {
             Block b1 = b.getRelative(face);
-            if (b1.getType().isSolid()) {
+            if (SlideManager.isSolid(b.getType())) {
                 return b1;
             }
         }
