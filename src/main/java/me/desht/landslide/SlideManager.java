@@ -30,6 +30,7 @@ import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.FallingBlock;
+import org.bukkit.material.MaterialData;
 import org.bukkit.material.PistonBaseMaterial;
 import org.bukkit.material.PistonExtensionMaterial;
 import org.bukkit.util.Vector;
@@ -64,10 +65,9 @@ public class SlideManager {
     private static boolean nonVanilla;
 
     public interface ScheduledBlockMove {
-
         public FallingBlock initiateMove();
-
     }
+
     @SuppressWarnings("unchecked")
     public SlideManager(LandslidePlugin plugin) {
         this.plugin = plugin;
@@ -135,7 +135,7 @@ public class SlideManager {
     public boolean scheduleBlockFling(Block block, Vector vec, Vector offset) {
         int delay = plugin.getRandom().nextInt(MAX_SLIDE_DELAY);
         Vector offset2 = offset.clone().multiply(0.5);
-        Fling fling = new Fling(block, block.getLocation().add(offset), vec.add(offset2), block.getType(), block.getData());
+        Fling fling = new Fling(block, block.getLocation().add(offset), vec.add(offset2));
         if (scheduleOperation(fling, delay)) {
             Debugger.getInstance().debug("scheduled fling: " + block.getLocation() + " -> " + vec);
             return true;
@@ -384,47 +384,47 @@ public class SlideManager {
     public static boolean isSolid(Material material) {
         // account for possible non-vanilla blocks - we just treat anything
         // that isn't a vanilla block as solid
-        // 175 is the highest vanilla block ID for 1.7.x
+        // 175 is the highest vanilla block ID for MC 1.7.x
+        // TODO: looks like it will be 197 for MC 1.8
         return material.isSolid() || (nonVanilla && material.getId() > 175);
     }
 
     private class Slide implements ScheduledBlockMove {
         private final Location loc;
-        private final Material blockMaterial;
-        private final byte data;
+        private final MaterialData materialData;
         private final BlockFace direction;
         private final boolean immediate;
 
         private Slide(Location loc, BlockFace direction, Material blockType, byte data, boolean immediate) {
             this.direction = direction;
             this.loc = loc;
-            this.blockMaterial = blockType;
-            this.data = data;
+            this.materialData = new MaterialData(blockType, data);
             this.immediate = immediate;
         }
 
         @Override
         public FallingBlock initiateMove() {
             Block b = loc.getBlock();
-            if (wouldSlide(b) == null || (b.getType() != blockMaterial && !immediate)) {
+            if (wouldSlide(b) == null || (b.getType() != materialData.getItemType() && !immediate)) {
                 // sanity check; ensure the block can still slide now
                 return null;
             }
 
             Block above = b.getRelative(BlockFace.UP);
-            FallingBlock fb;
             int blockType = 0;
             byte blockData = 0;
-            byte fbData = data;
+
+            MaterialData fbMaterial = null;
 
             if (b.getType() == Material.SNOW && isSolid(b.getRelative(BlockFace.DOWN).getType())) {
                 // special case; snow can slide off in layers
-                fbData = 0; // single layer of snow slides
+                fbMaterial = new MaterialData(Material.SNOW, (byte) 0); // single layer of snow
                 if (b.getData() > 0) {
                     // leave behind a slightly smaller layer of snow
                     blockData = (byte) (b.getData() - 1);
                     blockType = Material.SNOW.getId();
                 }
+
             } else if (b.getType() == Material.STATIONARY_WATER || b.getType() == Material.WATER) {
                 // another special case: if a water block is about to slide, see if it's possible to fill
                 // in with a new source block instead of air
@@ -439,25 +439,29 @@ public class SlideManager {
                 }
             }
 
-            Material fbMaterial = plugin.getPerWorldConfig().getTransform(b.getWorld(), blockMaterial);
-            if (fbMaterial == Material.AIR) {
-                // spawning falling air blocks makes the client very sad
-                return null;
+            if (fbMaterial == null) {
+                fbMaterial = plugin.getPerWorldConfig().getTransform(b.getWorld(), materialData);
+                if (fbMaterial.getItemType() == Material.AIR) {
+                    // spawning falling air blocks makes the client very sad
+                    return null;
+                }
             }
 
+            FallingBlock fb;
             if (isSolid(above.getType()) && direction != BlockFace.DOWN) {
+                // sliding out of a cliff face
                 if (plugin.getRandom().nextInt(100) < plugin.getPerWorldConfig().getCliffStability(b.getWorld())) {
                     return null;
                 }
                 b.setTypeIdAndData(blockType, blockData, true);
                 // start with the block out of its hole - can't slide it sideways with a block above
                 Block toSide = loc.getBlock().getRelative(direction);
-                fb = loc.getWorld().spawnFallingBlock(toSide.getLocation(), fbMaterial, fbData);
+                fb = loc.getWorld().spawnFallingBlock(toSide.getLocation(), fbMaterial.getItemType(), fbMaterial.getData());
                 float force = plugin.getRandom().nextFloat() / 2.0f;
                 fb.setVelocity(new Vector(direction.getModX() * force, 0.15, direction.getModZ() * force));
             } else {
                 b.setTypeIdAndData(blockType, blockData, true);
-                fb = loc.getWorld().spawnFallingBlock(loc.add(0.0, direction == BlockFace.DOWN ? 0.0 : 0.15, 0.0), fbMaterial, fbData);
+                fb = loc.getWorld().spawnFallingBlock(loc.add(0.0, direction == BlockFace.DOWN ? 0.0 : 0.15, 0.0), fbMaterial.getItemType(), fbMaterial.getData());
                 double x = direction.getModX() / 4.7;
                 double z = direction.getModZ() / 4.7;
                 fb.setVelocity(new Vector(x, direction == BlockFace.DOWN ? 0.0 : 0.15, z));
@@ -471,22 +475,21 @@ public class SlideManager {
     private class Fling implements ScheduledBlockMove {
         private final Location loc;
         private final Vector vec;
-        private final Material blockType;
-        private final byte data;
+        private final MaterialData materialData;
         private final Block block;
 
-        private Fling(Block block, Location location, Vector vec, Material blockType, byte data) {
+        private Fling(Block block, Location location, Vector vec) {
             this.block = block;
             this.loc = location;
             this.vec = vec;
-            this.blockType = blockType;
-            this.data = data;
+            this.materialData = new MaterialData(block.getType(), block.getData());
         }
 
         @Override
         public FallingBlock initiateMove() {
             block.setType(Material.AIR);
-            FallingBlock fb = loc.getWorld().spawnFallingBlock(loc, plugin.getPerWorldConfig().getTransform(loc.getWorld(), blockType), data);
+            MaterialData md = plugin.getPerWorldConfig().getTransform(loc.getWorld(), materialData);
+            FallingBlock fb = loc.getWorld().spawnFallingBlock(loc, md.getItemType(), md.getData());
             fb.setVelocity(vec);
             fb.setDropItem(!isLiquid(fb.getMaterial()) && plugin.getPerWorldConfig().getDropItems(loc.getWorld()));
             return fb;

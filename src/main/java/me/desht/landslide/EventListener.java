@@ -37,6 +37,7 @@ import org.bukkit.event.entity.ItemSpawnEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.material.MaterialData;
 import org.bukkit.util.Vector;
 
 import java.util.Random;
@@ -150,7 +151,7 @@ public class EventListener implements Listener {
         if (block.getType().hasGravity() && event.getEntity() instanceof FallingBlock) {
             FallingBlock fb = (FallingBlock) event.getEntity();
             if (block.getType() == fb.getMaterial()) {
-                int chanceToSlide = plugin.getPerWorldConfig().getSlideChance(block.getWorld(), block.getType());
+                int chanceToSlide = plugin.getPerWorldConfig().getSlideChance(block.getWorld(), new MaterialData(block.getType(), block.getData()));
                 if (plugin.getRandom().nextInt(100) > chanceToSlide) {
                     event.setCancelled(true);
                 }
@@ -344,8 +345,9 @@ public class EventListener implements Listener {
         World world = block.getWorld();
         Debugger.getInstance().debug(2, "check for slide: " + block + " immediate=" + immediate + " justLanded=" + justLanded);
 
-        int slideChance = plugin.getPerWorldConfig().getSlideChance(world, mat);
-        int dropChance = plugin.getPerWorldConfig().getDropChance(world, mat);
+        MaterialData matData = new MaterialData(mat, data);
+        int slideChance = plugin.getPerWorldConfig().getSlideChance(world, matData);
+        int dropChance = plugin.getPerWorldConfig().getDropChance(world, matData);
         int bounceChance = plugin.getConfig().getInt("bounce_chance");
         if (justLanded && bounceChance <= plugin.getRandom().nextInt(100)) {
             return false;

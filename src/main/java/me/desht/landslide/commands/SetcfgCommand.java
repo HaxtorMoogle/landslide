@@ -89,11 +89,11 @@ public class SetcfgCommand extends AbstractCommand {
     private Object getDefault(ConfigurationManager mgr, String key) {
         if (key.startsWith("slide_chance.") || key.startsWith("drop_chance.")) {
             String mat = key.substring(key.indexOf(".") + 1);
-            DHValidate.notNull(Material.matchMaterial(mat), "Unknown material: " + mat);
+            DHValidate.notNull(LandslidePlugin.parseMaterialData(mat), "Unknown material: " + mat);
             return 0;
         } else if (key.startsWith("transform.")) {
             String mat = key.substring(key.indexOf(".") + 1);
-            DHValidate.notNull(Material.matchMaterial(mat), "Unknown material: " + mat);
+            DHValidate.notNull(LandslidePlugin.parseMaterialData(mat), "Unknown material: " + mat);
             return "";
         } else if (mgr.check(key) != null) {
             return mgr.getConfig().getDefaults().get(key);

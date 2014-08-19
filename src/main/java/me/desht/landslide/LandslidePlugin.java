@@ -30,7 +30,7 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
-import org.bukkit.event.Listener;
+import org.bukkit.material.MaterialData;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -41,16 +41,17 @@ import java.util.List;
 import java.util.Random;
 import java.util.regex.Pattern;
 
-public class LandslidePlugin extends JavaPlugin implements Listener, ConfigurationListener {
+public class LandslidePlugin extends JavaPlugin implements ConfigurationListener {
 
     public static final BlockFace[] horizontalFaces = {BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST};
     public static final BlockFace[] allFaces = {BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST, BlockFace.UP, BlockFace.DOWN};
 
     private final SlideManager slideManager = new SlideManager(this);
     private final CommandManager cmds = new CommandManager(this);
+    private final SnowHandler snowHandler = new SnowHandler(this);
 
-    private ConfigurationManager configManager;
     private final Random random = new Random();
+    private ConfigurationManager configManager;
     private WorldGuardPlugin worldGuardPlugin = null;
     private PerWorldConfiguration perWorldConfig;
 
@@ -59,7 +60,6 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
     private boolean protocolLibEnabled = false;
 
     private static LandslidePlugin instance = null;
-    private SnowHandler snowHandler;
 
     @Override
     public void onEnable() {
@@ -89,8 +89,6 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
         cmds.registerCommand(new PowerCommand());
         cmds.registerCommand(new WandCommand());
         cmds.registerCommand(new InfoCommand());
-
-        snowHandler = new SnowHandler(this);
 
         processConfig();
         perWorldConfig = new PerWorldConfiguration(this);
@@ -241,7 +239,7 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
     private static final Pattern pctPat = Pattern.compile("(slide_chance\\.|drop_chance\\.|cliff_stability|explode_effect_chance|form_chance|melt_chance)");
 
     @Override
-    public void onConfigurationValidate(ConfigurationManager configurationManager, String key, Object oldVal, Object newVal) {
+    public Object onConfigurationValidate(ConfigurationManager configurationManager, String key, Object oldVal, Object newVal) {
         if (key.startsWith("worldguard.") && !isWorldGuardAvailable()) {
             throw new DHUtilsException("WorldGuard plugin is not enabled");
         }
@@ -260,9 +258,9 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
             DHValidate.isTrue((Integer) newVal >= 0, "Value must be >= 0");
         } else if (key.startsWith("transform.")) {
             String s = key.substring(key.indexOf('.') + 1);
-            Material from = Material.matchMaterial(s);
+            MaterialData from = LandslidePlugin.parseMaterialData(s);
             DHValidate.notNull(from, "Invalid material: " + s);
-            Material to = Material.matchMaterial((String) newVal);
+            MaterialData to = LandslidePlugin.parseMaterialData((String) newVal);
             DHValidate.notNull(to, "Invalid material: " + s);
         } else if (key.equals("worldguard.use_flag")) {
             validateWorldGuardFlag((String) newVal);
@@ -270,6 +268,7 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
             int v = (Integer) newVal;
             DHValidate.isTrue(v >= 1 && v <= 7, "Value must be in range 1-7 inclusive");
         }
+        return newVal;
     }
 
     @Override
@@ -327,6 +326,13 @@ public class LandslidePlugin extends JavaPlugin implements Listener, Configurati
             }
         }
         return true;
+    }
+
+
+    public static MaterialData parseMaterialData(String s) {
+        String[] f = s.split("@");
+        Material mat = Material.matchMaterial(f[0]);
+        return mat == null ? null : new MaterialData(mat, f.length > 1 ? Byte.parseByte(f[1]) : (byte) -1);
     }
 
     public SnowHandler getSnowHandler() {

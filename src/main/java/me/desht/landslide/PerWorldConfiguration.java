@@ -4,6 +4,7 @@ import me.desht.dhutils.Debugger;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.configuration.Configuration;
+import org.bukkit.material.MaterialData;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -113,11 +114,11 @@ public class PerWorldConfiguration {
         return getWorldParams(world.getName()).getCliffStability();
     }
 
-    public int getSlideChance(World world, Material mat) {
+    public int getSlideChance(World world, MaterialData mat) {
         return getWorldParams(world.getName()).getSlideChance(mat);
     }
 
-    public int getDropChance(World world, Material mat) {
+    public int getDropChance(World world, MaterialData mat) {
         return getWorldParams(world.getName()).getDropChance(mat);
     }
 
@@ -125,7 +126,7 @@ public class PerWorldConfiguration {
         return getWorldParams(world.getName()).getDropItems();
     }
 
-    public Material getTransform(World world, Material mat) {
+    public MaterialData getTransform(World world, MaterialData mat) {
         return getWorldParams(world.getName()).getTransform(mat);
     }
 
@@ -181,8 +182,8 @@ public class PerWorldConfiguration {
         private Boolean enabled = null;
         private Boolean dropItems = null;
         private Boolean horizontalSlides = null;
-        private final Map<Material, Integer> slideChances = new HashMap<Material, Integer>();
-        private final Map<Material, Integer> dropChances = new HashMap<Material, Integer>();
+        private final Map<MaterialData, Integer> slideChances = new HashMap<MaterialData, Integer>();
+        private final Map<MaterialData, Integer> dropChances = new HashMap<MaterialData, Integer>();
         private final BlockTransform transforms = new BlockTransform();
         private Integer snowMeltChance = null;
         private Integer snowFormChance = null;
@@ -226,13 +227,13 @@ public class PerWorldConfiguration {
             transforms.add(s1, s2);
         }
 
-        public Material getTransform(Material mat) {
-            Material res = transforms.get(mat);
+        public MaterialData getTransform(MaterialData mat) {
+            MaterialData res = transforms.get(mat);
             return res == null ? defaultWorld.getTransform(mat, mat) : res;
         }
 
-        private Material getTransform(Material mat, Material def) {
-            Material res = transforms.get(mat);
+        private MaterialData getTransform(MaterialData mat, MaterialData def) {
+            MaterialData res = transforms.get(mat);
             return res == null ? def : res;
         }
 
@@ -260,34 +261,52 @@ public class PerWorldConfiguration {
             return cliffStability == null ? defaultWorld.getCliffStability() : cliffStability;
         }
 
-        public int getSlideChance(Material mat) {
-            return slideChances.containsKey(mat) ? slideChances.get(mat) : defaultWorld.getSlideChance(mat, 0);
+        public int getSlideChance(MaterialData mat) {
+            return getSlideChance(mat, null);
+        }
+
+        private int getSlideChance(MaterialData mat, Integer def) {
+            Integer chance = slideChances.get(mat);
+            if (chance != null) {
+                return chance;
+            }
+            MaterialData wildMat = new MaterialData(mat.getItemType(), (byte) -1);
+            chance = slideChances.get(wildMat);
+            if (chance != null) {
+                return chance;
+            }
+            return def == null ? defaultWorld.getSlideChance(mat, 0) : def;
         }
 
         public void setSlideChance(String matName, int chance) {
-            Material mat = Material.matchMaterial(matName);
+            MaterialData mat = LandslidePlugin.parseMaterialData(matName);
             if (mat != null) {
                 slideChances.put(mat, chance);
             }
         }
 
-        private int getSlideChance(Material mat, int def) {
-            return slideChances.containsKey(mat) ? slideChances.get(mat) : def;
+        public int getDropChance(MaterialData mat) {
+            return getDropChance(mat, null);
+        }
+
+        private int getDropChance(MaterialData mat, Integer def) {
+            Integer chance = dropChances.get(mat);
+            if (chance != null) {
+                return chance;
+            }
+            MaterialData wildMat = new MaterialData(mat.getItemType(), (byte) -1);
+            chance = dropChances.get(wildMat);
+            if (chance != null) {
+                return chance;
+            }
+            return def == null ? defaultWorld.getDropChance(mat, 0) : def;
         }
 
         public void setDropChance(String matName, int chance) {
-            Material mat = Material.matchMaterial(matName);
+            MaterialData mat = LandslidePlugin.parseMaterialData(matName);
             if (mat != null) {
                 dropChances.put(mat, chance);
             }
-        }
-
-        public int getDropChance(Material mat) {
-            return dropChances.containsKey(mat) ? dropChances.get(mat) : defaultWorld.getDropChance(mat, 0);
-        }
-
-        private int getDropChance(Material mat, int def) {
-            return dropChances.containsKey(mat) ? dropChances.get(mat) : def;
         }
 
         public int getExplodeEffectChance() {

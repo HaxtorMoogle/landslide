@@ -43,7 +43,7 @@ public class DeleteCfgCommand extends AbstractCommand {
         String key = args[0];
         Matcher m = worldPat.matcher(key);
         if (!m.find() || m.groupCount() != 2) {
-            throw new DHUtilsException("Only per-world (worlds.world.XXX) keys may be deleted");
+            throw new DHUtilsException("Only per-world (worlds.<world-name>.<key>) keys may be deleted");
         }
         ConfigurationManager configManager = ((LandslidePlugin) plugin).getConfigManager();
         configManager.set(key, (String) null);
