@@ -5,6 +5,7 @@ Landslide is a Bukkit plugin that significantly changes the stackability mechani
 ## Installation and Usage
 
 Detailed documentation can be found in BukkitDev: http://dev.bukkit.org/bukkit-mods/landslide
+
 Releases can be found on Spigotmc: http://www.spigotmc.org/resources/landslide.1982/
 
 ## Building
