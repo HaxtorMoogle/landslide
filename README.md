@@ -10,7 +10,7 @@ Detailed documentation can be found in BukkitDev: http://dev.bukkit.org/bukkit-m
 
 If you want to build Landslide yourself, you will need Maven.
 
-1) Clone the Landslide project: ```git clone https://github.com/desht/landslide.git```
+1) Clone the Landslide project: ```git clone https://github.com/TriptychGames/landslide.git```
 
 2) Run ```mvn clean install```
 
