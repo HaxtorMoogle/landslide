@@ -1,5 +1,5 @@
 max_slides_per_tick: 10
-max_slides_total: 75
+max_slides_total: 25
 pager:
   lines: 0
 coloured_console: true

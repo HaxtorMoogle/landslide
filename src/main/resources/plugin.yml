@@ -1,7 +1,7 @@
 name: ${project.name}
 main: me.desht.landslide.LandslidePlugin
 version: ${project.version}
-author: desht
+authors: [TriptychGames, desht]
 website: http://dev.bukkit.org/bukkit-mods/landslide
 softdepend: [ WorldGuard, ProtocolLib ]
 
